@@ -1,0 +1,6 @@
+{
+  "name": "Personal Quest Tracker",
+  "description": "A serious personal task and quest tracking dashboard with procrastination analysis and AI oracle suggestions.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

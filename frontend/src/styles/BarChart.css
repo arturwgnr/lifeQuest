@@ -1,0 +1,77 @@
+.bar-chart__empty {
+  font-size: 0.8125rem;
+  color: var(--slate-400);
+  text-align: center;
+  padding: 2rem 0;
+}
+
+.bar-chart__legend {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.bar-chart__legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  color: var(--slate-600);
+}
+
+.bar-chart__legend-swatch {
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 0.15rem;
+}
+
+.bar-chart__plot {
+  position: relative;
+}
+
+.bar-chart__svg {
+  width: 100%;
+  height: 10rem;
+  overflow: visible;
+  display: block;
+}
+
+.bar-chart__baseline {
+  stroke: var(--slate-200);
+  stroke-width: 0.5;
+}
+
+/* Plain HTML overlay, positioned to match the SVG's coordinate space via
+   percentages - deliberately NOT rendered as SVG <text>, since the chart's
+   viewBox is non-uniformly stretched (preserveAspectRatio="none") and text
+   glyphs would distort along with it. */
+.bar-chart__value-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.bar-chart__value {
+  position: absolute;
+  transform: translate(-50%, calc(-100% - 3px));
+  font-size: 10px;
+  font-family: var(--font-mono);
+  color: var(--slate-600);
+  white-space: nowrap;
+}
+
+.bar-chart__labels {
+  display: flex;
+  margin-top: 0.4rem;
+}
+
+.bar-chart__label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--slate-500);
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0 0.15rem;
+}

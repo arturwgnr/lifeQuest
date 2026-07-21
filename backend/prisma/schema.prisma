@@ -1,0 +1,180 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Gender {
+  MASCULINE
+  FEMININE
+  NEUTRAL
+}
+
+enum PriorityType {
+  MAIN
+  SIDE
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  BLOCKED
+  DONE
+}
+
+enum MessageSender {
+  USER
+  ASSISTANT
+  ORACLE_QUESTION
+}
+
+enum SuggestionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  passwordHash  String
+  name          String
+  gender        Gender   @default(NEUTRAL)
+  xp            Int      @default(0)
+  level         Int      @default(1)
+  avatarStage   Int      @default(1)
+  profileIcon   String   @default("Shield")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  tasks           Task[]
+  categories      Category[]
+  conversations   OracleConversation[]
+  journalEntries  JournalEntry[]
+  journalInsights JournalWeeklyInsight[]
+}
+
+model Category {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  icon      String
+  tone      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tasks       Task[]
+  suggestions OracleSuggestion[]
+
+  @@index([userId])
+}
+
+model Task {
+  id           String        @id @default(cuid())
+  userId       String
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title        String
+  categoryId   String
+  category     Category      @relation(fields: [categoryId], references: [id])
+  priorityType PriorityType
+  status       TaskStatus    @default(TODO)
+  parentTaskId String?
+  parentTask   Task?         @relation("TaskChain", fields: [parentTaskId], references: [id])
+  subtasks     Task[]        @relation("TaskChain")
+  xpValue      Int
+  notes        String?
+  dueDate      DateTime?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  statusHistory TaskStatusHistory[]
+  suggestion    OracleSuggestion?
+
+  @@index([userId])
+  @@index([parentTaskId])
+  @@index([categoryId])
+}
+
+model TaskStatusHistory {
+  id        String     @id @default(cuid())
+  taskId    String
+  task      Task       @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  status    TaskStatus
+  changedAt DateTime   @default(now())
+
+  @@index([taskId])
+}
+
+model OracleConversation {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  messages OracleMessage[]
+}
+
+model OracleMessage {
+  id             String             @id @default(cuid())
+  conversationId String
+  conversation   OracleConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender         MessageSender
+  text           String
+  createdAt      DateTime           @default(now())
+
+  suggestions OracleSuggestion[]
+
+  @@index([conversationId])
+}
+
+model OracleSuggestion {
+  id            String           @id @default(cuid())
+  messageId     String
+  message       OracleMessage    @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  title         String
+  categoryId    String
+  category      Category         @relation(fields: [categoryId], references: [id])
+  priorityType  PriorityType
+  xpValue       Int
+  notes         String?
+  status        SuggestionStatus @default(PENDING)
+  createdTaskId String?          @unique
+  createdTask   Task?            @relation(fields: [createdTaskId], references: [id])
+  createdAt     DateTime         @default(now())
+  resolvedAt    DateTime?
+
+  @@index([messageId])
+  @@index([categoryId])
+}
+
+model JournalEntry {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  entryDate   DateTime // date-only (midnight UTC) representing the calendar day this entry belongs to
+  text        String
+  dayRating   Int
+  moods       String[]
+  insightText String? // short per-entry AI reflection, generated with memory of recent entries
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([userId, entryDate])
+  @@index([userId])
+}
+
+model JournalWeeklyInsight {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  weekStart   DateTime
+  weekEnd     DateTime
+  summaryText String
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+}

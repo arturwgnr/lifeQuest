@@ -1,0 +1,270 @@
+.journal__loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--slate-400);
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+}
+
+.journal {
+  padding: 1.5rem;
+}
+
+.journal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.journal__stats-link {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--indigo-600);
+  text-decoration: none;
+  padding: 0.4rem 0.75rem;
+  border: 1px solid var(--indigo-100);
+  background: var(--indigo-50);
+  border-radius: var(--radius-md);
+}
+
+.journal__stats-link:hover {
+  background: var(--indigo-100);
+}
+
+.journal__header h2 {
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--slate-900);
+  margin: 0;
+}
+
+.journal__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.journal__entry-card {
+  background: var(--surface);
+  border: 1px solid var(--slate-200);
+  border-radius: var(--radius-xl);
+  padding: 1.5rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.journal__entry-card h3 {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--slate-900);
+  margin: 0 0 1.25rem;
+}
+
+.journal__field-label {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--slate-500);
+  margin-bottom: 0.5rem;
+}
+
+.journal__rating-row {
+  margin-bottom: 1.25rem;
+}
+
+.journal__rating-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.journal__rating-button {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 999px;
+  border: 2px solid var(--slate-200);
+  background: var(--surface);
+  font-weight: 700;
+  color: var(--slate-500);
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.journal__rating-button--active {
+  color: white;
+}
+
+.journal__mood-row {
+  margin-bottom: 1.25rem;
+}
+
+.journal__mood-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.journal__mood-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
+  border: 1px solid var(--slate-200);
+  background: var(--surface);
+  font-size: 0.75rem;
+  color: var(--slate-600);
+}
+
+.journal__mood-chip--active {
+  background: var(--indigo-50);
+  border-color: var(--indigo-300);
+  color: var(--indigo-700);
+}
+
+.journal__textarea {
+  width: 100%;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  padding: 0.85rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--slate-200);
+  resize: vertical;
+  font-family: var(--font-sans);
+}
+
+.journal__textarea:focus {
+  outline: none;
+  border-color: var(--slate-400);
+}
+
+.journal__entry-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.journal__delete {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--rose-600);
+  background: none;
+  border: 1px solid transparent;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-md);
+  margin-right: auto;
+}
+
+.journal__delete:hover {
+  background: var(--rose-50);
+  border-color: var(--rose-100);
+}
+
+.journal__save {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 1rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: white;
+  background: var(--ink);
+  border: none;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+
+.journal__save:hover {
+  background: var(--ink-elevated);
+}
+
+.journal__save:disabled {
+  opacity: 0.6;
+}
+
+.journal__saved-notice {
+  font-size: 0.75rem;
+  color: var(--emerald-700);
+  font-weight: 600;
+}
+
+.journal__entry-insight {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding: 0.85rem 1rem;
+  background: var(--indigo-50);
+  border: 1px solid var(--indigo-100);
+  border-radius: var(--radius-lg);
+  color: var(--indigo-500);
+}
+
+.journal__entry-insight p {
+  font-size: 0.8125rem;
+  color: var(--indigo-900);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.journal__side {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.journal__insight-card {
+  background: linear-gradient(180deg, var(--indigo-50) 0%, var(--surface) 100%);
+  border: 1px solid var(--indigo-100);
+  border-radius: var(--radius-xl);
+  padding: 1.25rem;
+}
+
+.journal__insight-card h4 {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--indigo-800);
+  margin: 0 0 0.75rem;
+}
+
+.journal__insight-range {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--indigo-500);
+  margin: 0 0 0.5rem;
+}
+
+.journal__insight-text {
+  font-size: 0.8125rem;
+  color: var(--indigo-900);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.journal__insight-loading {
+  font-size: 0.8125rem;
+  color: var(--indigo-500);
+  margin: 0;
+}
+
+@media (min-width: 1024px) {
+  .journal__grid {
+    grid-template-columns: 1.3fr 1fr;
+  }
+}

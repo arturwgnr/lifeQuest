@@ -1,0 +1,247 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap");
+
+:root {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Space Grotesk", ui-monospace, SFMono-Regular, monospace;
+
+  /* Neutral scale (slate) */
+  --slate-50: #f8fafc;
+  --slate-100: #f1f5f9;
+  --slate-200: #e2e8f0;
+  --slate-300: #cbd5e1;
+  --slate-400: #94a3b8;
+  --slate-500: #64748b;
+  --slate-600: #475569;
+  --slate-700: #334155;
+  --slate-800: #1e293b;
+  --slate-900: #0f172a;
+  --slate-950: #020617;
+
+  /* Neutral scale (stone, used in modals) */
+  --stone-50: #fafaf9;
+  --stone-100: #f5f5f4;
+  --stone-200: #e7e5e4;
+  --stone-400: #a8a29e;
+  --stone-600: #57534e;
+  --stone-700: #44403c;
+  --stone-900: #1c1917;
+  --stone-950: #0c0a09;
+
+  /* Accents */
+  --amber-50: #fffbeb;
+  --amber-100: #fef3c7;
+  --amber-200: #fde68a;
+  --amber-500: #f59e0b;
+  --amber-600: #d97706;
+  --amber-700: #b45309;
+  --amber-900: #78350f;
+
+  --indigo-50: #eef2ff;
+  --indigo-100: #e0e7ff;
+  --indigo-300: #a5b4fc;
+  --indigo-400: #818cf8;
+  --indigo-500: #6366f1;
+  --indigo-600: #4f46e5;
+  --indigo-700: #4338ca;
+  --indigo-800: #3730a3;
+  --indigo-900: #312e81;
+
+  --emerald-50: #ecfdf5;
+  --emerald-100: #d1fae5;
+  --emerald-600: #059669;
+  --emerald-700: #047857;
+  --emerald-800: #065f46;
+  --emerald-900: #064e3b;
+
+  --rose-50: #fff1f2;
+  --rose-100: #ffe4e6;
+  --rose-500: #f43f5e;
+  --rose-600: #e11d48;
+  --rose-700: #be123c;
+
+  --sky-50: #f0f9ff;
+  --sky-100: #e0f2fe;
+  --sky-500: #0ea5e9;
+  --sky-600: #0284c7;
+  --sky-700: #0369a1;
+
+  --violet-50: #f5f3ff;
+  --violet-100: #ede9fe;
+  --violet-500: #8b5cf6;
+  --violet-600: #7c3aed;
+  --violet-700: #6d28d9;
+
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.03);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.08);
+
+  /* Card/modal surface - kept distinct from the page background (--slate-50)
+     for elevation in both themes. Every literal "background: white" for a
+     surface (not text-on-accent-color) should use this instead. */
+  --surface: #ffffff;
+
+  /* Fixed "ink" chrome: primary buttons, the sidebar, toasts, and chat bubbles
+     are deliberately dark in both themes (like a permanent brand-dark rail/CTA),
+     so they're pinned to these values instead of the invertible slate ramp. */
+  --ink: #0f172a;
+  --ink-elevated: #1e293b;
+  --ink-text: #cbd5e1;
+  --ink-text-muted: #94a3b8;
+  --ink-text-subtle: #64748b;
+  --ink-border: rgba(51, 65, 85, 0.6);
+
+  color-scheme: light;
+}
+
+/* Dark theme: the slate/stone neutral ramps are re-authored (not mechanically
+   mirrored) so every existing "light bg, dark text" component built against
+   these ramps renders correctly in reverse, without per-component changes.
+   Accent hues (amber/indigo/emerald/rose/sky/violet) are intentionally left
+   unchanged - their pale-bg + saturated-text badges read fine as accent chips
+   on a dark surface.
+
+   Scoped to [data-theme="dark"] on ANY element (not just :root) because the
+   attribute is applied to the AppShell's own root div, not <html> - light mode
+   is always the default, and dark only ever applies inside the authenticated
+   app after the user flips the toggle, never on the public landing/login pages. */
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --surface: #141c2e;
+
+  --slate-50: #0b1120;
+  --slate-100: #141c2e;
+  --slate-200: #202b41;
+  --slate-300: #2c394f;
+  --slate-400: #8b96a8;
+  --slate-500: #9aa5b6;
+  --slate-600: #b6c0d1;
+  --slate-700: #cbd5e1;
+  --slate-800: #e2e8f0;
+  --slate-900: #f1f5f9;
+  --slate-950: #f8fafc;
+
+  --stone-50: #14120f;
+  --stone-100: #1c1917;
+  --stone-200: #2b2622;
+  --stone-400: #8a827c;
+  --stone-600: #b7b0ac;
+  --stone-700: #d0cac6;
+  --stone-900: #f5f2f0;
+  --stone-950: #fafaf9;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.45);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Smooth fade between themes instead of an instant snap. Scoped to color
+   properties only (not `all`) so it doesn't fight existing hover/interaction
+   transitions declared on specific elements. */
+*,
+*::before,
+*::after {
+  transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease, fill 0.25s ease, stroke 0.25s ease;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  color: var(--slate-800);
+  background: var(--slate-50);
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+a {
+  color: inherit;
+}
+
+::selection {
+  background: var(--indigo-100);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-slide-in-up {
+  animation: slideInUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(28, 25, 23, 0.4);
+  backdrop-filter: blur(4px);
+}

@@ -1,0 +1,42 @@
+.profile-picture-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: white !important;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  flex-shrink: 0;
+}
+
+.profile-picture-badge--amber {
+  background: var(--amber-500);
+  color: var(--ink);
+}
+.profile-picture-badge--indigo {
+  background: var(--indigo-500);
+  color: white;
+}
+.profile-picture-badge--slate {
+  background: #475569;
+  color: white;
+}
+.profile-picture-badge--stone {
+  background: var(--stone-400);
+  color: var(--stone-900);
+}
+.profile-picture-badge--emerald {
+  background: var(--emerald-600);
+  color: white;
+}
+.profile-picture-badge--rose {
+  background: var(--rose-500);
+  color: white;
+}
+.profile-picture-badge--sky {
+  background: var(--sky-500);
+  color: white;
+}
+.profile-picture-badge--violet {
+  background: var(--violet-500);
+  color: white;
+}
