@@ -37,7 +37,8 @@ export const api = {
     update: (id, body) => request(`/tasks/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
     changeStatus: (id, status) =>
       request(`/tasks/${id}/status`, { method: "PATCH", body: JSON.stringify({ status }) }),
-    remove: id => request(`/tasks/${id}`, { method: "DELETE" })
+    remove: id => request(`/tasks/${id}`, { method: "DELETE" }),
+    removeCompleted: () => request("/tasks/completed", { method: "DELETE" })
   },
   categories: {
     list: () => request("/categories"),

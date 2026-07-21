@@ -4,6 +4,7 @@ import { api } from "../api/client.js";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useCategories } from "../context/CategoriesContext.jsx";
 import { STATUSES, STATUS_LABELS, PRIORITY_LABELS } from "../constants/status.js";
+import ConfirmModal from "./ConfirmModal.jsx";
 import "../styles/TaskDetailModal.css";
 
 function computeTimeline(statusHistory) {
@@ -44,6 +45,9 @@ export default function TaskDetailModal({ task, tasks, onClose, onUpdated, onDel
   const [detail, setDetail] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  const [isAbandoning, setIsAbandoning] = useState(false);
+  const [showAbandonConfirm, setShowAbandonConfirm] = useState(false);
 
   const [title, setTitle] = useState(task.title);
   const [categoryId, setCategoryId] = useState(task.categoryId);
@@ -110,8 +114,14 @@ export default function TaskDetailModal({ task, tasks, onClose, onUpdated, onDel
   };
 
   const handleDelete = async () => {
-    await api.tasks.remove(task.id);
-    onDeleted(task.id);
+    setIsAbandoning(true);
+    try {
+      await api.tasks.remove(task.id);
+      onDeleted(task.id);
+    } finally {
+      setIsAbandoning(false);
+      setShowAbandonConfirm(false);
+    }
   };
 
   const timelineEvents = detail ? computeTimeline(detail.statusHistory) : [];
@@ -304,7 +314,11 @@ export default function TaskDetailModal({ task, tasks, onClose, onUpdated, onDel
         </div>
 
         <div className="task-detail-modal__footer">
-          <button type="button" className="task-detail-modal__delete" onClick={handleDelete}>
+          <button
+            type="button"
+            className="task-detail-modal__delete"
+            onClick={() => setShowAbandonConfirm(true)}
+          >
             <Trash2 size={16} />
             Abandon Quest
           </button>
@@ -333,6 +347,17 @@ export default function TaskDetailModal({ task, tasks, onClose, onUpdated, onDel
           </div>
         </div>
       </div>
+
+      {showAbandonConfirm && (
+        <ConfirmModal
+          title="Abandon this quest?"
+          message={`"${task.title}" will be permanently deleted. This action cannot be undone.`}
+          confirmLabel="Abandon Quest"
+          isProcessing={isAbandoning}
+          onConfirm={handleDelete}
+          onCancel={() => setShowAbandonConfirm(false)}
+        />
+      )}
     </div>
   );
 }

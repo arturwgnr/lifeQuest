@@ -1,42 +1,50 @@
-const Anthropic = require("@anthropic-ai/sdk");
+const { GoogleGenerativeAI, SchemaType } = require("@google/generative-ai");
 
-const MODEL = "claude-sonnet-5";
+const MODEL = "gemini-2.5-flash";
+
+function isConfigured(apiKey) {
+  return apiKey && apiKey !== "AIza...";
+}
 
 function buildProposeQuestsTool(categoryNames) {
   return {
-    name: "propose_quests",
-    description:
-      "Record the Oracle's conversational reply, an optional single clarifying question, and any structured task suggestions parsed from the user's narration.",
-    input_schema: {
-      type: "object",
-      properties: {
-        reply: {
-          type: "string",
-          description: "Brief supportive conversational feedback (1-3 sentences), subtle mentor tone, never childish."
-        },
-        question: {
-          type: "string",
-          description:
-            "Exactly one clarifying question if there's ambiguity about whether an existing task is done or this is a duplicate. Omit entirely if nothing is ambiguous."
-        },
-        suggestions: {
-          type: "array",
-          description: "Up to 3 structured task suggestions extracted from the narration. Empty array if none apply.",
-          items: {
-            type: "object",
-            properties: {
-              title: { type: "string" },
-              category: { type: "string", enum: categoryNames, description: "Must be exactly one of the user's existing category names." },
-              priorityType: { type: "string", enum: ["MAIN", "SIDE"] },
-              xpValue: { type: "integer", description: "10-20 for small side tasks, 40-60 for main tasks, 80-100 for large milestones." },
-              notes: { type: "string" }
+    functionDeclarations: [
+      {
+        name: "propose_quests",
+        description:
+          "Record the Oracle's conversational reply, an optional single clarifying question, and any structured task suggestions parsed from the user's narration.",
+        parameters: {
+          type: SchemaType.OBJECT,
+          properties: {
+            reply: {
+              type: SchemaType.STRING,
+              description: "Brief supportive conversational feedback (1-3 sentences), subtle mentor tone, never childish."
             },
-            required: ["title", "category", "priorityType", "xpValue"]
-          }
+            question: {
+              type: SchemaType.STRING,
+              description:
+                "Exactly one clarifying question if there's ambiguity about whether an existing task is done or this is a duplicate. Omit entirely if nothing is ambiguous."
+            },
+            suggestions: {
+              type: SchemaType.ARRAY,
+              description: "Up to 3 structured task suggestions extracted from the narration. Empty array if none apply.",
+              items: {
+                type: SchemaType.OBJECT,
+                properties: {
+                  title: { type: SchemaType.STRING },
+                  category: { type: SchemaType.STRING, enum: categoryNames, description: "Must be exactly one of the user's existing category names." },
+                  priorityType: { type: SchemaType.STRING, enum: ["MAIN", "SIDE"] },
+                  xpValue: { type: SchemaType.INTEGER, description: "10-20 for small side tasks, 40-60 for main tasks, 80-100 for large milestones." },
+                  notes: { type: SchemaType.STRING }
+                },
+                required: ["title", "category", "priorityType", "xpValue"]
+              }
+            }
+          },
+          required: ["reply", "suggestions"]
         }
-      },
-      required: ["reply", "suggestions"]
-    }
+      }
+    ]
   };
 }
 
@@ -66,47 +74,49 @@ Rules you must follow:
 4. Assign XP thoughtfully: 10-20 for small side tasks, 40-60 for main tasks, 80-100 for large milestones.
 
 Existing tasks (for cross-referencing and duplicate detection):
-${context}`;
+${context}
+
+Always respond by calling the propose_quests function, never as plain text.`;
 }
 
 async function getOracleResponse({ message, existingTasks, history, categories }) {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY;
   const categoryNames = categories.map(c => c.name);
 
-  if (!apiKey || apiKey === "sk-ant-...") {
+  if (!isConfigured(apiKey)) {
     return {
       reply:
-        "The Oracle is running in offline mode because no ANTHROPIC_API_KEY is configured. Set it in your backend .env to unlock live narration parsing.",
+        "The Oracle is running in offline mode because no GEMINI_API_KEY is configured. Set it in your backend .env to unlock live narration parsing.",
       question: null,
       suggestions: []
     };
   }
 
-  const client = new Anthropic({ apiKey });
-
-  const messages = [
-    ...history.map(h => ({
-      role: h.sender === "USER" ? "user" : "assistant",
-      content: h.text
-    })),
-    { role: "user", content: message }
-  ];
-
-  const response = await client.messages.create({
+  const client = new GoogleGenerativeAI(apiKey);
+  const model = client.getGenerativeModel({
     model: MODEL,
-    max_tokens: 1024,
-    system: buildSystemPrompt(existingTasks, categoryNames),
-    messages,
+    systemInstruction: buildSystemPrompt(existingTasks, categoryNames),
     tools: [buildProposeQuestsTool(categoryNames)],
-    tool_choice: { type: "tool", name: "propose_quests" }
+    toolConfig: {
+      functionCallingConfig: { mode: "ANY", allowedFunctionNames: ["propose_quests"] }
+    }
   });
 
-  const toolUse = response.content.find(block => block.type === "tool_use");
-  if (!toolUse) {
+  const contents = [
+    ...history.map(h => ({
+      role: h.sender === "USER" ? "user" : "model",
+      parts: [{ text: h.text }]
+    })),
+    { role: "user", parts: [{ text: message }] }
+  ];
+
+  const result = await model.generateContent({ contents });
+  const call = result.response.functionCalls()?.[0];
+  if (!call) {
     return { reply: "The Oracle could not parse a structured response. Please try rephrasing.", question: null, suggestions: [] };
   }
 
-  const { reply, question, suggestions } = toolUse.input;
+  const { reply, question, suggestions } = call.args;
   return {
     reply: reply || "",
     question: question || null,
@@ -115,13 +125,13 @@ async function getOracleResponse({ message, existingTasks, history, categories }
 }
 
 async function getWeeklyJournalInsight({ entries, stagnantTaskCount }) {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY;
 
-  if (!apiKey || apiKey === "sk-ant-...") {
-    return "Weekly insight is unavailable in offline mode because no ANTHROPIC_API_KEY is configured. Once a key is set, the Oracle will summarize emotional patterns from your journal entries here.";
+  if (!isConfigured(apiKey)) {
+    return "Weekly insight is unavailable in offline mode because no GEMINI_API_KEY is configured. Once a key is set, the Oracle will summarize emotional patterns from your journal entries here.";
   }
 
-  const client = new Anthropic({ apiKey });
+  const client = new GoogleGenerativeAI(apiKey);
 
   const entrySummary = entries
     .map(e => `${e.entryDate}: rating ${e.dayRating}/5, moods: ${e.moods.join(", ") || "none"} - "${e.text.slice(0, 300)}"`)
@@ -134,27 +144,21 @@ emotions, or - if provided - a correlation with a high number of stagnant/blocke
 must NEVER make diagnostic or clinical claims and NEVER suggest therapy or medical treatment. Keep the tone warm,
 encouraging, and grounded in what the entries actually say.`;
 
+  const model = client.getGenerativeModel({ model: MODEL, systemInstruction: system });
   const userContent = `This week's journal entries:\n${entrySummary}\n\nCurrently stagnant/blocked tasks in the tracker: ${stagnantTaskCount}`;
 
-  const response = await client.messages.create({
-    model: MODEL,
-    max_tokens: 400,
-    system,
-    messages: [{ role: "user", content: userContent }]
-  });
-
-  const textBlock = response.content.find(block => block.type === "text");
-  return textBlock ? textBlock.text : "The Oracle could not generate an insight this week.";
+  const result = await model.generateContent(userContent);
+  return result.response.text() || "The Oracle could not generate an insight this week.";
 }
 
 async function getEntryInsight({ newEntry, recentEntries }) {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY;
 
-  if (!apiKey || apiKey === "sk-ant-...") {
-    return "Offline mode: set ANTHROPIC_API_KEY to unlock a short reflection on this entry after each save.";
+  if (!isConfigured(apiKey)) {
+    return "Offline mode: set GEMINI_API_KEY to unlock a short reflection on this entry after each save.";
   }
 
-  const client = new Anthropic({ apiKey });
+  const client = new GoogleGenerativeAI(apiKey);
 
   const history = recentEntries
     .map(e => `${e.entryDate}: rating ${e.dayRating}/5, moods: ${e.moods.join(", ") || "none"} - "${e.text.slice(0, 200)}"`)
@@ -167,17 +171,11 @@ recent days when relevant - but only mention a pattern if the entries actually s
 clinical claims, never suggest therapy or medical treatment. Warm, grounded, concise tone. This supplements a weekly
 summary, so keep it short and specific to today's entry.`;
 
+  const model = client.getGenerativeModel({ model: MODEL, systemInstruction: system });
   const userContent = `Recent past entries (oldest to newest, may be empty if this is the first):\n${history || "(none yet)"}\n\nToday's new entry (${newEntry.entryDate}): rating ${newEntry.dayRating}/5, moods: ${newEntry.moods.join(", ") || "none"} - "${newEntry.text.slice(0, 500)}"`;
 
-  const response = await client.messages.create({
-    model: MODEL,
-    max_tokens: 200,
-    system,
-    messages: [{ role: "user", content: userContent }]
-  });
-
-  const textBlock = response.content.find(block => block.type === "text");
-  return textBlock ? textBlock.text : null;
+  const result = await model.generateContent(userContent);
+  return result.response.text() || null;
 }
 
 module.exports = { getOracleResponse, getWeeklyJournalInsight, getEntryInsight };

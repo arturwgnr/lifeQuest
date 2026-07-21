@@ -6,6 +6,22 @@
   text-align: center;
 }
 
+/* Dark mode: the pale fixed fill above stays glaringly light on a dark
+   surface, recalibrated to a restrained dark green tint here only. */
+[data-theme="dark"] .attention-today--clear {
+  background: rgba(16, 185, 129, 0.1);
+  border-color: rgba(52, 211, 153, 0.3);
+}
+
+[data-theme="dark"] .attention-today--clear h3 {
+  color: var(--emerald-100);
+}
+
+[data-theme="dark"] .attention-today--clear p {
+  color: var(--emerald-100);
+  opacity: 0.85;
+}
+
 .attention-today__clear-icon {
   display: inline-flex;
   align-items: center;

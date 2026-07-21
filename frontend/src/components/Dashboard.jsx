@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Compass, Plus } from "lucide-react";
+import { Compass, Plus, Trash2 } from "lucide-react";
 import { api } from "../api/client.js";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useCategories } from "../context/CategoriesContext.jsx";
@@ -9,6 +9,7 @@ import TaskList from "./TaskList.jsx";
 import AddTaskModal from "./AddTaskModal.jsx";
 import TaskDetailModal from "./TaskDetailModal.jsx";
 import LevelUpNotification from "./LevelUpNotification.jsx";
+import ConfirmModal from "./ConfirmModal.jsx";
 import "../styles/Dashboard.css";
 
 export default function Dashboard() {
@@ -19,6 +20,8 @@ export default function Dashboard() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState(null);
   const [levelUp, setLevelUp] = useState(null);
+  const [showDeleteCompletedConfirm, setShowDeleteCompletedConfirm] = useState(false);
+  const [isDeletingCompleted, setIsDeletingCompleted] = useState(false);
 
   const [filterCategory, setFilterCategory] = useState("All");
   const [filterPriority, setFilterPriority] = useState("All");
@@ -85,8 +88,20 @@ export default function Dashboard() {
     setSelectedTaskId(null);
   };
 
+  const handleDeleteCompleted = async () => {
+    setIsDeletingCompleted(true);
+    try {
+      await api.tasks.removeCompleted();
+      await loadTasks();
+    } finally {
+      setIsDeletingCompleted(false);
+      setShowDeleteCompletedConfirm(false);
+    }
+  };
+
   const rootTasks = tasks.filter((t) => !t.parentTaskId);
   const activeCount = tasks.filter((t) => t.status !== "DONE").length;
+  const completedCount = tasks.filter((t) => t.status === "DONE").length;
   const selectedTask = tasks.find((t) => t.id === selectedTaskId) || null;
 
   if (isLoading)
@@ -136,14 +151,26 @@ export default function Dashboard() {
 
         <div className="dashboard__filters-panel">
           <div className="dashboard__filters-heading">
-            <h3>
-              <Compass size={16} />
-              Quest Log &amp; Activity
-            </h3>
-            <p>
-              You have <strong>{activeCount}</strong> unresolved quests. Align
-              filters below to review.
-            </p>
+            <div className="dashboard__filters-heading-text">
+              <h3>
+                <Compass size={16} />
+                Quest Log &amp; Activity
+              </h3>
+              <p>
+                You have <strong>{activeCount}</strong> unresolved quests.
+                Align filters below to review.
+              </p>
+            </div>
+            {completedCount > 0 && (
+              <button
+                type="button"
+                className="dashboard__delete-completed"
+                onClick={() => setShowDeleteCompletedConfirm(true)}
+              >
+                <Trash2 size={13} />
+                Delete Completed ({completedCount})
+              </button>
+            )}
           </div>
 
           <div className="dashboard__filters-grid">
@@ -228,6 +255,17 @@ export default function Dashboard() {
 
       {levelUp !== null && (
         <LevelUpNotification level={levelUp} onClose={() => setLevelUp(null)} />
+      )}
+
+      {showDeleteCompletedConfirm && (
+        <ConfirmModal
+          title="Delete all completed quests?"
+          message={`${completedCount} completed quest${completedCount === 1 ? "" : "s"} will be permanently deleted. This action cannot be undone.`}
+          confirmLabel="Delete Completed"
+          isProcessing={isDeletingCompleted}
+          onConfirm={handleDeleteCompleted}
+          onCancel={() => setShowDeleteCompletedConfirm(false)}
+        />
       )}
     </div>
   );

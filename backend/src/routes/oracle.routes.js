@@ -1,7 +1,7 @@
 const express = require("express");
 const { prisma } = require("../lib/prisma");
 const { requireAuth } = require("../middleware/requireAuth");
-const { getOracleResponse } = require("../lib/anthropic");
+const { getOracleResponse } = require("../lib/gemini");
 
 const router = express.Router();
 router.use(requireAuth);

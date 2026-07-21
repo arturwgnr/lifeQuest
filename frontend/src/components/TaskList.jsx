@@ -50,6 +50,16 @@ function TaskBadges({ task }) {
   );
 }
 
+// A standalone task sinks as soon as it's Done. A chain (parent + children) only
+// sinks once every child is Done too, an individually-completed child doesn't
+// pull the whole chain down while siblings are still open.
+function isSunk(task) {
+  if (task.chain && task.chain.total > 0) {
+    return task.chain.completed === task.chain.total;
+  }
+  return task.status === "DONE";
+}
+
 export default function TaskList({ tasks, filteredTasks, onTaskSelect, onStatusChange, onQuickComplete }) {
   const { getCategoryDisplay } = useCategories();
   const [collapsed, setCollapsed] = useState({});
@@ -64,6 +74,9 @@ export default function TaskList({ tasks, filteredTasks, onTaskSelect, onStatusC
 
   const visibleRoots = Array.from(new Map([...rootTasks, ...parentsOfVisibleChildren].map(t => [t.id, t])).values()).sort(
     (a, b) => {
+      const aSunk = isSunk(a);
+      const bSunk = isSunk(b);
+      if (aSunk !== bSunk) return aSunk ? 1 : -1;
       if (a.priorityType === "MAIN" && b.priorityType !== "MAIN") return -1;
       if (a.priorityType !== "MAIN" && b.priorityType === "MAIN") return 1;
       return new Date(b.createdAt) - new Date(a.createdAt);

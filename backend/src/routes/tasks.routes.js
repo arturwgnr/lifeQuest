@@ -156,6 +156,24 @@ router.patch("/:id/status", async (req, res) => {
   res.json({ task: serializeTask(updated, allTasks), leveledUpTo });
 });
 
+// Bulk action: wipe every completed task at once. Declared before /:id so
+// this literal path isn't swallowed by the :id param route.
+router.delete("/completed", async (req, res) => {
+  const completed = await prisma.task.findMany({
+    where: { userId: req.userId, status: "DONE" },
+    select: { id: true }
+  });
+  const ids = completed.map(t => t.id);
+
+  if (ids.length === 0) return res.json({ deletedCount: 0 });
+
+  // Detach any children of a deleted completed task, same as the single-delete route
+  await prisma.task.updateMany({ where: { parentTaskId: { in: ids } }, data: { parentTaskId: null } });
+  const result = await prisma.task.deleteMany({ where: { id: { in: ids } } });
+
+  res.json({ deletedCount: result.count });
+});
+
 router.delete("/:id", async (req, res) => {
   const existing = await prisma.task.findFirst({ where: { id: req.params.id, userId: req.userId } });
   if (!existing) return res.status(404).json({ error: "Task not found" });

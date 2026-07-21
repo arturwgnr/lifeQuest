@@ -1064,7 +1064,6 @@
 
 .landing__signin-card:hover {
   box-shadow: 1px 1px 30px #32548f27;
-  transform: scale(1.01);
 }
 
 .landing__signin-icon {
