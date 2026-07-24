@@ -928,7 +928,7 @@
 .landing__signin-glow {
   position: absolute;
   inset: 2rem;
-  background: #39a6ff2f;
+  background: #39a6ff50;
   border-radius: calc(var(--radius-xl) + -5rem);
   filter: blur(60px);
   z-index: 0;
