@@ -2,7 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import { Send, Mic, Sparkles, Check, X, Edit2, HelpCircle } from "lucide-react";
 import { api } from "../api/client.js";
 import { useCategories } from "../context/CategoriesContext.jsx";
+import { playMessageSent, playMessageReceived, playQuestProposed, playApprove, playReject } from "../utils/soundEffects.js";
 import "../styles/OracleScreen.css";
+
+const RECORDING_MAX_DURATION_MS = 60 * 1000;
 
 const NARRATION_PRESETS = [
   {
@@ -32,6 +35,7 @@ export default function OracleScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
 
   const [editingSuggestionId, setEditingSuggestionId] = useState(null);
   const [editTitle, setEditTitle] = useState("");
@@ -42,10 +46,12 @@ export default function OracleScreen() {
 
   const chatEndRef = useRef(null);
   const recognitionRef = useRef(null);
+  const recordingTimeoutRef = useRef(null);
 
   const reloadConversation = async () => {
     const { messages: loaded } = await api.oracle.conversation();
     setMessages(loaded);
+    return loaded;
   };
 
   useEffect(() => {
@@ -60,17 +66,31 @@ export default function OracleScreen() {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isSending]);
 
+  const clearRecordingTimeout = () => {
+    if (recordingTimeoutRef.current) {
+      clearTimeout(recordingTimeoutRef.current);
+      recordingTimeoutRef.current = null;
+    }
+  };
+
+  // Recording should only ever end for two reasons: the user clicks the mic
+  // again, or the 1-minute cap below fires. `continuous: true` disables the
+  // browser's own built-in silence/pause auto-stop so neither sneaks in as a
+  // third, unwanted stop condition.
   const handleToggleRecording = () => {
     if (!SpeechRecognitionApi) return;
 
     if (isRecording) {
       recognitionRef.current?.stop();
       setIsRecording(false);
+      setIsTranscribing(true);
+      clearRecordingTimeout();
       return;
     }
 
     const recognition = new SpeechRecognitionApi();
     recognition.lang = "en-US";
+    recognition.continuous = true;
     recognition.interimResults = false;
     recognition.onresult = event => {
       const transcript = Array.from(event.results)
@@ -78,22 +98,65 @@ export default function OracleScreen() {
         .join(" ");
       setInputText(prev => (prev ? `${prev} ${transcript}` : transcript));
     };
-    recognition.onend = () => setIsRecording(false);
+    recognition.onend = () => {
+      setIsRecording(false);
+      setIsTranscribing(false);
+      clearRecordingTimeout();
+    };
+    recognition.onerror = () => {
+      setIsRecording(false);
+      setIsTranscribing(false);
+      clearRecordingTimeout();
+    };
     recognitionRef.current = recognition;
     recognition.start();
     setIsRecording(true);
+    setIsTranscribing(false);
+
+    recordingTimeoutRef.current = setTimeout(() => {
+      recognitionRef.current?.stop();
+      setIsRecording(false);
+      setIsTranscribing(true);
+    }, RECORDING_MAX_DURATION_MS);
   };
+
+  useEffect(() => {
+    return () => {
+      recognitionRef.current?.stop();
+      clearRecordingTimeout();
+    };
+  }, []);
 
   const handleSubmitNarration = async textToSend => {
     if (!textToSend.trim() || isSending) return;
+
+    const beforeCount = pendingSuggestionsFrom(messages).length;
+
+    // Optimistic UI: render the user's own bubble immediately instead of
+    // waiting on the Oracle's reply, which is swapped in wholesale (replacing
+    // this temporary entry) once reloadConversation resolves below.
+    const optimisticMessage = {
+      id: `optimistic-${Date.now()}`,
+      sender: "USER",
+      text: textToSend,
+      createdAt: new Date().toISOString(),
+      suggestions: []
+    };
+    setMessages(prev => [...prev, optimisticMessage]);
     setInputText("");
+    playMessageSent();
     setIsSending(true);
+
     try {
       await api.oracle.sendMessage(textToSend);
+      const loaded = await reloadConversation();
+      const afterCount = pendingSuggestionsFrom(loaded).length;
+      if (afterCount > beforeCount) playQuestProposed();
+      else playMessageReceived();
     } catch {
       // The backend persists an error message on the conversation even on failure; reload picks it up.
-    } finally {
       await reloadConversation();
+    } finally {
       setIsSending(false);
     }
   };
@@ -112,11 +175,13 @@ export default function OracleScreen() {
   const handleApprove = async suggestion => {
     await api.oracle.approveSuggestion(suggestion.id);
     updateSuggestionLocally(suggestion.id, { status: "APPROVED" });
+    playApprove();
   };
 
   const handleReject = async suggestion => {
     await api.oracle.rejectSuggestion(suggestion.id);
     updateSuggestionLocally(suggestion.id, { status: "REJECTED" });
+    playReject();
   };
 
   const handleStartEdit = suggestion => {
@@ -225,9 +290,21 @@ export default function OracleScreen() {
               if (inputText.trim()) handleSubmitNarration(inputText);
             }}
           >
-            {isRecording && (
+            {(isRecording || isTranscribing) && (
               <div className="oracle-screen__recording-overlay">
-                <span>Recording narration...</span>
+                {isRecording ? (
+                  <>
+                    <span className="oracle-screen__recording-waveform" aria-hidden="true">
+                      <span />
+                      <span />
+                      <span />
+                      <span />
+                    </span>
+                    <span>Recording narration...</span>
+                  </>
+                ) : (
+                  <span>Transcribing...</span>
+                )}
               </div>
             )}
 
@@ -240,9 +317,11 @@ export default function OracleScreen() {
 
             <button
               type="button"
-              className={`oracle-screen__mic ${isRecording ? "oracle-screen__mic--active" : ""}`}
+              className={`oracle-screen__mic ${isRecording ? "oracle-screen__mic--active" : ""} ${
+                isTranscribing ? "oracle-screen__mic--transcribing" : ""
+              }`}
               onClick={handleToggleRecording}
-              disabled={!SpeechRecognitionApi}
+              disabled={!SpeechRecognitionApi || isTranscribing}
               title={SpeechRecognitionApi ? "Dictate narration" : "Voice input is not supported in this browser"}
             >
               <Mic size={16} />
