@@ -2,7 +2,13 @@ import { useEffect, useRef, useState } from "react";
 import { Send, Mic, Sparkles, Check, X, Edit2, HelpCircle } from "lucide-react";
 import { api } from "../api/client.js";
 import { useCategories } from "../context/CategoriesContext.jsx";
-import { playMessageSent, playMessageReceived, playQuestProposed, playApprove, playReject } from "../utils/soundEffects.js";
+import {
+  playMessageSent,
+  playMessageReceived,
+  playQuestProposed,
+  playApprove,
+  playReject,
+} from "../utils/soundEffects.js";
 import "../styles/OracleScreen.css";
 
 const RECORDING_MAX_DURATION_MS = 60 * 1000;
@@ -10,22 +16,29 @@ const RECORDING_MAX_DURATION_MS = 60 * 1000;
 const NARRATION_PRESETS = [
   {
     label: "Log Finance & Health",
-    text: "I finished auditing my weekly subscriptions today. Also, I need to schedule my dental cleaning tomorrow and start a 15-minute daily cardio quest."
+    text: "I finished auditing my weekly subscriptions today. Also, I need to schedule my dental cleaning tomorrow and start a 15-minute daily cardio quest.",
   },
   {
     label: "Work & Bureaucracy",
-    text: "I've drafted the monthly technical status report! It was tough. Next, I need to renew my international passport before it expires."
+    text: "I've drafted the monthly technical status report! It was tough. Next, I need to renew my international passport before it expires.",
   },
   {
     label: "Personal Development",
-    text: "I read Chapter 4 of Atomic Habits today! It was super inspiring. I want to plan a weekend dinner for my partner's birthday too."
-  }
+    text: "I read Chapter 4 of Atomic Habits today! It was super inspiring. I want to plan a weekend dinner for my partner's birthday too.",
+  },
 ];
 
-const SpeechRecognitionApi = typeof window !== "undefined" ? window.SpeechRecognition || window.webkitSpeechRecognition : null;
+const SpeechRecognitionApi =
+  typeof window !== "undefined"
+    ? window.SpeechRecognition || window.webkitSpeechRecognition
+    : null;
 
 function pendingSuggestionsFrom(messages) {
-  return messages.flatMap(m => (m.suggestions || []).filter(s => s.status === "PENDING").map(s => ({ ...s, messageId: m.id })));
+  return messages.flatMap((m) =>
+    (m.suggestions || [])
+      .filter((s) => s.status === "PENDING")
+      .map((s) => ({ ...s, messageId: m.id })),
+  );
 }
 
 export default function OracleScreen() {
@@ -92,11 +105,11 @@ export default function OracleScreen() {
     recognition.lang = "en-US";
     recognition.continuous = true;
     recognition.interimResults = false;
-    recognition.onresult = event => {
+    recognition.onresult = (event) => {
       const transcript = Array.from(event.results)
-        .map(r => r[0].transcript)
+        .map((r) => r[0].transcript)
         .join(" ");
-      setInputText(prev => (prev ? `${prev} ${transcript}` : transcript));
+      setInputText((prev) => (prev ? `${prev} ${transcript}` : transcript));
     };
     recognition.onend = () => {
       setIsRecording(false);
@@ -127,7 +140,7 @@ export default function OracleScreen() {
     };
   }, []);
 
-  const handleSubmitNarration = async textToSend => {
+  const handleSubmitNarration = async (textToSend) => {
     if (!textToSend.trim() || isSending) return;
 
     const beforeCount = pendingSuggestionsFrom(messages).length;
@@ -140,9 +153,9 @@ export default function OracleScreen() {
       sender: "USER",
       text: textToSend,
       createdAt: new Date().toISOString(),
-      suggestions: []
+      suggestions: [],
     };
-    setMessages(prev => [...prev, optimisticMessage]);
+    setMessages((prev) => [...prev, optimisticMessage]);
     setInputText("");
     playMessageSent();
     setIsSending(true);
@@ -161,30 +174,32 @@ export default function OracleScreen() {
     }
   };
 
-  const handleAnswerQuestion = answer => handleSubmitNarration(answer);
+  const handleAnswerQuestion = (answer) => handleSubmitNarration(answer);
 
   const updateSuggestionLocally = (id, patch) => {
-    setMessages(prev =>
-      prev.map(m => ({
+    setMessages((prev) =>
+      prev.map((m) => ({
         ...m,
-        suggestions: (m.suggestions || []).map(s => (s.id === id ? { ...s, ...patch } : s))
-      }))
+        suggestions: (m.suggestions || []).map((s) =>
+          s.id === id ? { ...s, ...patch } : s,
+        ),
+      })),
     );
   };
 
-  const handleApprove = async suggestion => {
+  const handleApprove = async (suggestion) => {
     await api.oracle.approveSuggestion(suggestion.id);
     updateSuggestionLocally(suggestion.id, { status: "APPROVED" });
     playApprove();
   };
 
-  const handleReject = async suggestion => {
+  const handleReject = async (suggestion) => {
     await api.oracle.rejectSuggestion(suggestion.id);
     updateSuggestionLocally(suggestion.id, { status: "REJECTED" });
     playReject();
   };
 
-  const handleStartEdit = suggestion => {
+  const handleStartEdit = (suggestion) => {
     setEditingSuggestionId(suggestion.id);
     setEditTitle(suggestion.title);
     setEditCategoryId(suggestion.categoryId);
@@ -193,8 +208,14 @@ export default function OracleScreen() {
     setEditXp(suggestion.xpValue);
   };
 
-  const handleSaveEdit = async id => {
-    const patch = { title: editTitle, categoryId: editCategoryId, priorityType: editPriorityType, notes: editNotes, xpValue: editXp };
+  const handleSaveEdit = async (id) => {
+    const patch = {
+      title: editTitle,
+      categoryId: editCategoryId,
+      priorityType: editPriorityType,
+      notes: editNotes,
+      xpValue: editXp,
+    };
     await api.oracle.editSuggestion(id, patch);
     updateSuggestionLocally(id, patch);
     setEditingSuggestionId(null);
@@ -202,7 +223,10 @@ export default function OracleScreen() {
 
   const pendingSuggestions = pendingSuggestionsFrom(messages);
 
-  if (isLoading) return <div className="oracle-screen__loading">Consulting the Oracle...</div>;
+  if (isLoading)
+    return (
+      <div className="oracle-screen__loading">Consulting the Oracle...</div>
+    );
 
   return (
     <div className="oracle-screen">
@@ -217,8 +241,12 @@ export default function OracleScreen() {
 
         <div className="oracle-screen__presets">
           <span>Narrations:</span>
-          {NARRATION_PRESETS.map(preset => (
-            <button key={preset.label} type="button" onClick={() => setInputText(preset.text)}>
+          {NARRATION_PRESETS.map((preset) => (
+            <button
+              key={preset.label}
+              type="button"
+              onClick={() => setInputText(preset.text)}
+            >
               {preset.label}
             </button>
           ))}
@@ -230,11 +258,12 @@ export default function OracleScreen() {
               <Sparkles size={28} />
               <p>The Oracle sits quietly, awaiting your entry.</p>
               <p className="oracle-screen__empty-sub">
-                Narrate your daily progress or future plans naturally. I will help organize and formulate structured quests.
+                Narrate your daily progress or future plans naturally. I will
+                help organize and formulate structured quests.
               </p>
             </div>
           ) : (
-            messages.map(msg => {
+            messages.map((msg) => {
               if (msg.sender === "ORACLE_QUESTION") {
                 return (
                   <div key={msg.id} className="oracle-screen__question">
@@ -244,13 +273,22 @@ export default function OracleScreen() {
                     <h4>The Oracle seeks clarity:</h4>
                     <p>{msg.text}</p>
                     <div className="oracle-screen__question-actions">
-                      <button type="button" onClick={() => handleAnswerQuestion("Yes, please complete the existing task.")}>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleAnswerQuestion(
+                            "Yes, please complete the existing task.",
+                          )
+                        }
+                      >
                         "Yes, resolve existing quest"
                       </button>
                       <button
                         type="button"
                         className="oracle-screen__question-actions-secondary"
-                        onClick={() => handleAnswerQuestion("No, this is a fresh new task.")}
+                        onClick={() =>
+                          handleAnswerQuestion("No, this is a fresh new task.")
+                        }
                       >
                         "No, forge a new quest"
                       </button>
@@ -261,10 +299,20 @@ export default function OracleScreen() {
 
               const isUser = msg.sender === "USER";
               return (
-                <div key={msg.id} className={`oracle-screen__bubble-row ${isUser ? "oracle-screen__bubble-row--user" : ""}`}>
-                  <div className={`oracle-screen__bubble ${isUser ? "oracle-screen__bubble--user" : "oracle-screen__bubble--assistant"}`}>
+                <div
+                  key={msg.id}
+                  className={`oracle-screen__bubble-row ${isUser ? "oracle-screen__bubble-row--user" : ""}`}
+                >
+                  <div
+                    className={`oracle-screen__bubble ${isUser ? "oracle-screen__bubble--user" : "oracle-screen__bubble--assistant"}`}
+                  >
                     <p>{msg.text}</p>
-                    <span>{new Date(msg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+                    <span>
+                      {new Date(msg.createdAt).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </span>
                   </div>
                 </div>
               );
@@ -285,7 +333,7 @@ export default function OracleScreen() {
 
         <div className="oracle-screen__input-bar">
           <form
-            onSubmit={e => {
+            onSubmit={(e) => {
               e.preventDefault();
               if (inputText.trim()) handleSubmitNarration(inputText);
             }}
@@ -294,7 +342,10 @@ export default function OracleScreen() {
               <div className="oracle-screen__recording-overlay">
                 {isRecording ? (
                   <>
-                    <span className="oracle-screen__recording-waveform" aria-hidden="true">
+                    <span
+                      className="oracle-screen__recording-waveform"
+                      aria-hidden="true"
+                    >
                       <span />
                       <span />
                       <span />
@@ -311,7 +362,7 @@ export default function OracleScreen() {
             <input
               type="text"
               value={inputText}
-              onChange={e => setInputText(e.target.value)}
+              onChange={(e) => setInputText(e.target.value)}
               placeholder="Speak naturally: 'I completed my health quest and should start a work report tomorrow...'"
             />
 
@@ -322,7 +373,11 @@ export default function OracleScreen() {
               }`}
               onClick={handleToggleRecording}
               disabled={!SpeechRecognitionApi || isTranscribing}
-              title={SpeechRecognitionApi ? "Dictate narration" : "Voice input is not supported in this browser"}
+              title={
+                SpeechRecognitionApi
+                  ? "Dictate narration"
+                  : "Voice input is not supported in this browser"
+              }
             >
               <Mic size={16} />
             </button>
@@ -345,13 +400,18 @@ export default function OracleScreen() {
           <div className="oracle-screen__suggestions-empty">
             <Check size={20} />
             <h4>No Pending Proposals</h4>
-            <p>When you submit narrations, the Oracle's recommended task structures will align here for review before filing.</p>
+            <p>
+              When you submit narrations, the Oracle's recommended task
+              structures will align here for review before filing.
+            </p>
           </div>
         ) : (
           <div className="oracle-screen__suggestions-list">
-            {pendingSuggestions.map(sug => {
+            {pendingSuggestions.map((sug) => {
               const isEditing = editingSuggestionId === sug.id;
-              const config = getCategoryDisplay(isEditing ? editCategoryId : sug.categoryId);
+              const config = getCategoryDisplay(
+                isEditing ? editCategoryId : sug.categoryId,
+              );
               const Icon = config.icon;
 
               return (
@@ -359,29 +419,48 @@ export default function OracleScreen() {
                   {!isEditing ? (
                     <>
                       <div className="suggestion-card__top">
-                        <span className={`suggestion-card__category suggestion-card__category--${config.tone}`}>
+                        <span
+                          className={`suggestion-card__category suggestion-card__category--${config.tone}`}
+                        >
                           <Icon size={12} />
                           {config.name}
                         </span>
                         <div className="suggestion-card__meta">
-                          <span className="suggestion-card__priority">{sug.priorityType}</span>
-                          <span className="suggestion-card__xp">+{sug.xpValue} XP</span>
+                          <span className="suggestion-card__priority">
+                            {sug.priorityType}
+                          </span>
+                          <span className="suggestion-card__xp">
+                            +{sug.xpValue} XP
+                          </span>
                         </div>
                       </div>
 
                       <h4 className="suggestion-card__title">{sug.title}</h4>
-                      <p className="suggestion-card__notes">{sug.notes || "No extra context parsed."}</p>
+                      <p className="suggestion-card__notes">
+                        {sug.notes || "No extra context parsed."}
+                      </p>
 
                       <div className="suggestion-card__actions">
-                        <button type="button" onClick={() => handleStartEdit(sug)}>
+                        <button
+                          type="button"
+                          onClick={() => handleStartEdit(sug)}
+                        >
                           <Edit2 size={12} />
                           Edit
                         </button>
-                        <button type="button" className="suggestion-card__reject" onClick={() => handleReject(sug)}>
+                        <button
+                          type="button"
+                          className="suggestion-card__reject"
+                          onClick={() => handleReject(sug)}
+                        >
                           <X size={14} />
                           Reject
                         </button>
-                        <button type="button" className="suggestion-card__approve" onClick={() => handleApprove(sug)}>
+                        <button
+                          type="button"
+                          className="suggestion-card__approve"
+                          onClick={() => handleApprove(sug)}
+                        >
                           <Check size={14} />
                           Approve Quest
                         </button>
@@ -391,13 +470,19 @@ export default function OracleScreen() {
                     <div className="suggestion-card__edit">
                       <div className="suggestion-card__field">
                         <label>Title</label>
-                        <input value={editTitle} onChange={e => setEditTitle(e.target.value)} />
+                        <input
+                          value={editTitle}
+                          onChange={(e) => setEditTitle(e.target.value)}
+                        />
                       </div>
                       <div className="suggestion-card__grid">
                         <div className="suggestion-card__field">
                           <label>Category</label>
-                          <select value={editCategoryId} onChange={e => setEditCategoryId(e.target.value)}>
-                            {categories.map(c => (
+                          <select
+                            value={editCategoryId}
+                            onChange={(e) => setEditCategoryId(e.target.value)}
+                          >
+                            {categories.map((c) => (
                               <option key={c.id} value={c.id}>
                                 {c.name}
                               </option>
@@ -406,7 +491,12 @@ export default function OracleScreen() {
                         </div>
                         <div className="suggestion-card__field">
                           <label>Priority</label>
-                          <select value={editPriorityType} onChange={e => setEditPriorityType(e.target.value)}>
+                          <select
+                            value={editPriorityType}
+                            onChange={(e) =>
+                              setEditPriorityType(e.target.value)
+                            }
+                          >
                             <option value="MAIN">Main</option>
                             <option value="SIDE">Side</option>
                           </select>
@@ -414,17 +504,32 @@ export default function OracleScreen() {
                       </div>
                       <div className="suggestion-card__field">
                         <label>Reward (XP)</label>
-                        <input type="number" value={editXp} onChange={e => setEditXp(Number(e.target.value))} />
+                        <input
+                          type="number"
+                          value={editXp}
+                          onChange={(e) => setEditXp(Number(e.target.value))}
+                        />
                       </div>
                       <div className="suggestion-card__field">
                         <label>Notes</label>
-                        <textarea rows={2} value={editNotes} onChange={e => setEditNotes(e.target.value)} />
+                        <textarea
+                          rows={2}
+                          value={editNotes}
+                          onChange={(e) => setEditNotes(e.target.value)}
+                        />
                       </div>
                       <div className="suggestion-card__edit-actions">
-                        <button type="button" onClick={() => setEditingSuggestionId(null)}>
+                        <button
+                          type="button"
+                          onClick={() => setEditingSuggestionId(null)}
+                        >
                           Cancel
                         </button>
-                        <button type="button" className="suggestion-card__save" onClick={() => handleSaveEdit(sug.id)}>
+                        <button
+                          type="button"
+                          className="suggestion-card__save"
+                          onClick={() => handleSaveEdit(sug.id)}
+                        >
                           Save
                         </button>
                       </div>

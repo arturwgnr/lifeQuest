@@ -106,8 +106,15 @@
 }
 
 .oracle-screen__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   text-align: center;
-  padding: 3rem 0;
+  gap: 0.75rem;
+  max-width: 26rem;
+  margin: 0 auto;
+  padding: 3rem 1.5rem;
   color: var(--slate-400);
 }
 
@@ -518,14 +525,46 @@
   border: 1px solid;
 }
 
-.suggestion-card__category--amber { background: var(--amber-50); color: var(--amber-600); border-color: var(--amber-100); }
-.suggestion-card__category--indigo { background: var(--indigo-50); color: var(--indigo-600); border-color: var(--indigo-100); }
-.suggestion-card__category--slate { background: var(--slate-50); color: var(--slate-700); border-color: var(--slate-200); }
-.suggestion-card__category--stone { background: var(--stone-100); color: var(--stone-600); border-color: var(--stone-200); }
-.suggestion-card__category--emerald { background: var(--emerald-50); color: var(--emerald-600); border-color: var(--emerald-100); }
-.suggestion-card__category--rose { background: var(--rose-50); color: var(--rose-600); border-color: var(--rose-100); }
-.suggestion-card__category--sky { background: var(--sky-50); color: var(--sky-600); border-color: var(--sky-100); }
-.suggestion-card__category--violet { background: var(--violet-50); color: var(--violet-600); border-color: var(--violet-100); }
+.suggestion-card__category--amber {
+  background: var(--amber-50);
+  color: var(--amber-600);
+  border-color: var(--amber-100);
+}
+.suggestion-card__category--indigo {
+  background: var(--indigo-50);
+  color: var(--indigo-600);
+  border-color: var(--indigo-100);
+}
+.suggestion-card__category--slate {
+  background: var(--slate-50);
+  color: var(--slate-700);
+  border-color: var(--slate-200);
+}
+.suggestion-card__category--stone {
+  background: var(--stone-100);
+  color: var(--stone-600);
+  border-color: var(--stone-200);
+}
+.suggestion-card__category--emerald {
+  background: var(--emerald-50);
+  color: var(--emerald-600);
+  border-color: var(--emerald-100);
+}
+.suggestion-card__category--rose {
+  background: var(--rose-50);
+  color: var(--rose-600);
+  border-color: var(--rose-100);
+}
+.suggestion-card__category--sky {
+  background: var(--sky-50);
+  color: var(--sky-600);
+  border-color: var(--sky-100);
+}
+.suggestion-card__category--violet {
+  background: var(--violet-50);
+  color: var(--violet-600);
+  border-color: var(--violet-100);
+}
 
 .suggestion-card__meta {
   display: flex;

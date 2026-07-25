@@ -224,3 +224,88 @@
 .auth-card__switch a:hover {
   text-decoration: underline;
 }
+
+/* Tablet and below: keep the centered card, just tighten the surrounding
+   chrome so it doesn't look like a desktop card floating in empty space. */
+@media (max-width: 768px) {
+  .auth-screen {
+    padding: 1.25rem;
+  }
+}
+
+/* Phone widths (~375-430px): anchor the card near the top instead of dead
+   center - dead-centering reads as awkward once the on-screen keyboard opens
+   for the fields below, and pushes the header off-screen on the Register
+   form. Spacing, type, and touch targets are also resized for the smaller
+   canvas rather than just shrunk. */
+@media (max-width: 640px) {
+  .auth-screen {
+    align-items: flex-start;
+    padding: 2.5rem 1rem;
+  }
+
+  .auth-card {
+    max-width: 100%;
+    padding: 1.5rem;
+    gap: 1.25rem;
+    border-radius: var(--radius-lg);
+  }
+
+  .auth-card__badge {
+    width: 2.75rem;
+    height: 2.75rem;
+  }
+
+  .auth-card__header h1 {
+    font-size: 1.0625rem;
+  }
+
+  .auth-card__avatar-preview {
+    padding: 0.875rem;
+  }
+
+  .auth-form {
+    gap: 1.125rem;
+  }
+
+  .auth-field__input-wrap input,
+  .auth-field select {
+    /* 16px minimum prevents iOS Safari from auto-zooming the page on focus */
+    font-size: 1rem;
+    padding-top: 0.85rem;
+    padding-bottom: 0.85rem;
+  }
+
+  .auth-field__input-wrap input {
+    padding-left: 2.5rem;
+  }
+
+  .auth-field__input-wrap svg {
+    left: 0.85rem;
+  }
+
+  .auth-card__xp-note {
+    padding: 0.875rem;
+  }
+
+  .auth-submit {
+    padding: 0.9rem;
+    font-size: 0.9375rem;
+    min-height: 2.75rem;
+  }
+}
+
+@media (max-width: 430px) {
+  .auth-screen {
+    padding: 1.75rem 0.875rem;
+  }
+
+  .auth-card {
+    padding: 1.25rem;
+    gap: 1rem;
+  }
+
+  .auth-card__header p {
+    font-size: 0.6875rem;
+  }
+}
