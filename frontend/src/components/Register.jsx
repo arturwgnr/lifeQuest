@@ -16,7 +16,7 @@ export default function Register() {
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleRegister = async e => {
+  const handleRegister = async (e) => {
     e.preventDefault();
     setError("");
     setIsSubmitting(true);
@@ -44,7 +44,9 @@ export default function Register() {
         <div className="auth-card__avatar-preview">
           <AvatarBadge level={1} xp={0} size={64} />
           <div>
-            <span className="auth-card__avatar-tier">Level 1 Sentinel State</span>
+            <span className="auth-card__avatar-tier">
+              Level 1 Sentinel State
+            </span>
             <span className="auth-card__avatar-label">Silent Silhouette</span>
           </div>
         </div>
@@ -58,8 +60,8 @@ export default function Register() {
                 type="text"
                 required
                 value={name}
-                onChange={e => setName(e.target.value)}
-                placeholder="e.g., Maia Odetes"
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g., Artur Wagner"
               />
             </div>
           </div>
@@ -68,7 +70,12 @@ export default function Register() {
             <label>Account Email</label>
             <div className="auth-field__input-wrap">
               <Mail size={16} />
-              <input type="email" required value={email} onChange={e => setEmail(e.target.value)} />
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
             </div>
           </div>
 
@@ -81,14 +88,14 @@ export default function Register() {
                 required
                 minLength={8}
                 value={password}
-                onChange={e => setPassword(e.target.value)}
+                onChange={(e) => setPassword(e.target.value)}
               />
             </div>
           </div>
 
           <div className="auth-field">
             <label>Avatar Gender Aesthetic</label>
-            <select value={gender} onChange={e => setGender(e.target.value)}>
+            <select value={gender} onChange={(e) => setGender(e.target.value)}>
               <option value="NEUTRAL">Neutral</option>
               <option value="FEMININE">Feminine</option>
               <option value="MASCULINE">Masculine</option>
@@ -101,8 +108,9 @@ export default function Register() {
               Mechanism of Quest Progression
             </div>
             <p>
-              Complete tasks to earn Experience Points (XP) and advance levels. XP is purely cosmetic &mdash; it
-              only changes how your avatar looks, never what you can do.
+              Complete tasks to earn Experience Points (XP) and advance levels.
+              XP is purely cosmetic &mdash; it only changes how your avatar
+              looks, never what you can do.
             </p>
           </div>
 

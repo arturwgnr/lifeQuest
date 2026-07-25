@@ -161,9 +161,7 @@ export default function Landing() {
                 <span className="landing__hero-dot" />
                 Needs Attention Today
               </div>
-              <p className="landing__hero-card-title">
-                Consolidate retirement portfolio
-              </p>
+              <p className="landing__hero-card-title">Reply important Email</p>
               <div className="landing__hero-progress-track">
                 <div className="landing__hero-progress-fill" />
               </div>
@@ -174,7 +172,7 @@ export default function Landing() {
                 Chain 2 / 3 complete
               </div>
               <p className="landing__hero-card-title landing__hero-card-title--small">
-                Q3 Finance Reorganization
+                Book doctor's appointment
               </p>
             </div>
           </div>
