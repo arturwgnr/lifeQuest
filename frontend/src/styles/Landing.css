@@ -1015,6 +1015,48 @@
   }
 }
 
+@media (max-width: 640px) {
+  .landing__inner {
+    margin: 15px;
+    padding: 0 1.25rem;
+  }
+
+  .landing__block--hero {
+    padding: 2rem 0;
+  }
+
+  .landing__hero {
+    padding: 1rem 0;
+    gap: 2rem;
+  }
+
+  .landing__headline {
+    font-size: 1.75rem;
+    margin-bottom: 1rem;
+  }
+
+  .landing__subhead {
+    font-size: 0.9375rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .landing__eyebrow {
+    margin-bottom: 1rem;
+  }
+
+  .landing__hero-visual {
+    padding: 0.5rem 0;
+  }
+
+  .landing__hero-card {
+    padding: 1rem;
+  }
+
+  .landing__hero-card--secondary {
+    margin-left: 1.5rem;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .landing__signin-glow {
     animation: none;
@@ -1022,9 +1064,13 @@
 }
 
 .landing__signin-mascot {
+  /* Anchored to .landing__signin-card (fixed max-width, position: relative)
+     rather than .landing__signin-visual, which is a flexible grid column that
+     resizes with the viewport - anchoring here kept shifting the mascot's
+     apparent position as the page width changed. */
   position: absolute;
   bottom: -1rem;
-  right: -1.4rem;
+  right: -8.8rem;
   width: 16rem;
   height: auto;
   z-index: 9999;
@@ -1042,7 +1088,10 @@
 
 @media (max-width: 420px) {
   .landing__signin-mascot {
-    display: none;
+    /* Scaled down rather than hidden, so it stays visible at all widths */
+    width: 10rem;
+    bottom: -0.6rem;
+    right: -4.1rem;
   }
 }
 

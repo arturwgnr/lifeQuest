@@ -1,5 +1,6 @@
+import { useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
-import { Compass, LayoutGrid, Sparkles, LogOut, UserCircle, BookHeart, BarChart3 } from "lucide-react";
+import { Compass, LayoutGrid, Sparkles, LogOut, UserCircle, BookHeart, BarChart3, Menu, X } from "lucide-react";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useTheme } from "../context/ThemeContext.jsx";
 import AvatarBadge from "./AvatarBadge.jsx";
@@ -23,6 +24,8 @@ export default function AppShell() {
   const { user, logout } = useAuth();
   const { theme } = useTheme();
   const navigate = useNavigate();
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const closeDrawer = () => setDrawerOpen(false);
 
   const handleLogout = async () => {
     await logout();
@@ -33,7 +36,9 @@ export default function AppShell() {
 
   return (
     <div className="app-shell" data-theme={theme}>
-      <aside className="app-shell__sidebar">
+      {drawerOpen && <div className="app-shell__drawer-backdrop" onClick={closeDrawer} />}
+
+      <aside className={`app-shell__sidebar${drawerOpen ? " app-shell__sidebar--open" : ""}`}>
         <div className="app-shell__brand">
           <span className="app-shell__brand-icon">
             <Compass size={18} />
@@ -43,6 +48,9 @@ export default function AppShell() {
             <p>Quest Intelligence</p>
           </div>
           <ThemeToggle />
+          <button type="button" className="app-shell__sidebar-close" onClick={closeDrawer} aria-label="Close menu">
+            <X size={18} />
+          </button>
         </div>
 
         <div className="app-shell__profile">
@@ -64,24 +72,24 @@ export default function AppShell() {
         </div>
 
         <nav className="app-shell__nav">
-          <NavLink to="/app" end className={({ isActive }) => `app-shell__nav-link${isActive ? " app-shell__nav-link--active" : ""}`}>
+          <NavLink to="/app" end onClick={closeDrawer} className={({ isActive }) => `app-shell__nav-link${isActive ? " app-shell__nav-link--active" : ""}`}>
             <LayoutGrid size={16} />
             Dashboard
           </NavLink>
-          <NavLink to="/app/oracle" className={({ isActive }) => `app-shell__nav-link${isActive ? " app-shell__nav-link--active" : ""}`}>
+          <NavLink to="/app/oracle" onClick={closeDrawer} className={({ isActive }) => `app-shell__nav-link${isActive ? " app-shell__nav-link--active" : ""}`}>
             <Sparkles size={16} />
             The Oracle
             <span className="app-shell__nav-dot" />
           </NavLink>
-          <NavLink to="/app/journal" className={({ isActive }) => `app-shell__nav-link${isActive ? " app-shell__nav-link--active" : ""}`}>
+          <NavLink to="/app/journal" onClick={closeDrawer} className={({ isActive }) => `app-shell__nav-link${isActive ? " app-shell__nav-link--active" : ""}`}>
             <BookHeart size={16} />
             Journal
           </NavLink>
-          <NavLink to="/app/stats" className={({ isActive }) => `app-shell__nav-link${isActive ? " app-shell__nav-link--active" : ""}`}>
+          <NavLink to="/app/stats" onClick={closeDrawer} className={({ isActive }) => `app-shell__nav-link${isActive ? " app-shell__nav-link--active" : ""}`}>
             <BarChart3 size={16} />
             Stats
           </NavLink>
-          <NavLink to="/app/profile" className={({ isActive }) => `app-shell__nav-link${isActive ? " app-shell__nav-link--active" : ""}`}>
+          <NavLink to="/app/profile" onClick={closeDrawer} className={({ isActive }) => `app-shell__nav-link${isActive ? " app-shell__nav-link--active" : ""}`}>
             <UserCircle size={16} />
             Profile
           </NavLink>
@@ -97,6 +105,9 @@ export default function AppShell() {
 
       <header className="app-shell__mobile-header">
         <div className="app-shell__mobile-top">
+          <button type="button" className="app-shell__hamburger" onClick={() => setDrawerOpen(true)} aria-label="Open menu">
+            <Menu size={20} />
+          </button>
           <div className="app-shell__brand">
             <span className="app-shell__brand-icon">
               <Compass size={16} />
@@ -110,28 +121,6 @@ export default function AppShell() {
             </button>
           </div>
         </div>
-        <nav className="app-shell__mobile-tabs">
-          <NavLink to="/app" end className={({ isActive }) => (isActive ? "app-shell__mobile-tab--active" : "")}>
-            <LayoutGrid size={14} />
-            Codex
-          </NavLink>
-          <NavLink to="/app/oracle" className={({ isActive }) => (isActive ? "app-shell__mobile-tab--active" : "")}>
-            <Sparkles size={14} />
-            Oracle
-          </NavLink>
-          <NavLink to="/app/journal" className={({ isActive }) => (isActive ? "app-shell__mobile-tab--active" : "")}>
-            <BookHeart size={14} />
-            Journal
-          </NavLink>
-          <NavLink to="/app/stats" className={({ isActive }) => (isActive ? "app-shell__mobile-tab--active" : "")}>
-            <BarChart3 size={14} />
-            Stats
-          </NavLink>
-          <NavLink to="/app/profile" className={({ isActive }) => (isActive ? "app-shell__mobile-tab--active" : "")}>
-            <UserCircle size={14} />
-            Profile
-          </NavLink>
-        </nav>
       </header>
 
       <main className="app-shell__main">

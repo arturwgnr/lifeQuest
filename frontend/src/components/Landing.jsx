@@ -363,12 +363,6 @@ export default function Landing() {
               ))}
             </div>
             <div className="landing__signin-glow" />
-            <img
-              src="/img/mascot.png"
-              alt=""
-              className="landing__signin-mascot"
-              aria-hidden="true"
-            />
             <div className="landing__signin-card">
               <div className="landing__signin-icon">
                 <Compass size={20} />
@@ -389,6 +383,12 @@ export default function Landing() {
                 <UserPlus size={13} />
                 New here? Start your quest log
               </Link>
+              <img
+                src="/img/mascot.png"
+                alt=""
+                className="landing__signin-mascot"
+                aria-hidden="true"
+              />
             </div>
           </div>
         </div>
