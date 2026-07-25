@@ -1,5 +1,7 @@
 const STAGNANT_THRESHOLD_DAYS = 3;
 
+//Code
+
 function isOverdue(task) {
   if (task.status === "DONE") return false;
   if (!task.dueDate) return false;
@@ -33,18 +35,18 @@ function withComputedFlags(task) {
     daysOverdue: daysOverdue(task),
     daysStagnant: daysStagnant(task),
     stagnant: isStagnant(task),
-    needsAttention: needsAttention(task)
+    needsAttention: needsAttention(task),
   };
 }
 
 function chainCompletion(parentTaskId, allTasks) {
-  const children = allTasks.filter(t => t.parentTaskId === parentTaskId);
+  const children = allTasks.filter((t) => t.parentTaskId === parentTaskId);
   if (children.length === 0) return { completed: 0, total: 0, percent: 0 };
-  const completed = children.filter(t => t.status === "DONE").length;
+  const completed = children.filter((t) => t.status === "DONE").length;
   return {
     completed,
     total: children.length,
-    percent: Math.round((completed / children.length) * 100)
+    percent: Math.round((completed / children.length) * 100),
   };
 }
 
@@ -56,5 +58,5 @@ module.exports = {
   isStagnant,
   needsAttention,
   withComputedFlags,
-  chainCompletion
+  chainCompletion,
 };
