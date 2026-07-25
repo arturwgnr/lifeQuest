@@ -1,6 +1,0 @@
-{
-  "name": "lifeQuest",
-  "description": "A professional, premium, modern landing page and interactive accountability task tracker with a clean light RPG touch and Oracle-based task planning.",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
-}

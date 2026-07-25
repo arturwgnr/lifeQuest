@@ -8,4 +8,5 @@ build/
 postgres-data/
 CLAUDE.md
 EDITS.md
-landing design/
+landing_design/
+design_aw/
