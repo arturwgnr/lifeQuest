@@ -1,27 +1,23 @@
 {
   "services": {
-      "frontend": {
-          "root": "frontend",
-          "framework": "vite"
-      },
-      "backend": {
-          "root": "backend"
-      }
+    "frontend": {
+      "root": "frontend",
+      "framework": "vite"
+    },
+    "backend": {
+      "root": "backend",
+      "framework": "express",
+      "entrypoint": "src/index.js"
+    }
   },
   "rewrites": [
-      {
-          "source": "/api(/.*)?",
-          "destination": {
-              "type": "service",
-              "service": "backend"
-          }
-      },
-      {
-          "source": "/(.*)",
-          "destination": {
-              "type": "service",
-              "service": "frontend"
-          }
-      }
+    {
+      "source": "/api/:path*",
+      "destination": { "service": "backend" }
+    },
+    {
+      "source": "/(.*)",
+      "destination": { "service": "frontend" }
+    }
   ]
 }
