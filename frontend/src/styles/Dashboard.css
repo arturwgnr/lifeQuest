@@ -122,6 +122,50 @@
   flex-wrap: wrap;
 }
 
+.dashboard__filters-heading-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+.dashboard__sort-control {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-shrink: 0;
+  background: var(--slate-50);
+  border: 1px solid var(--slate-200);
+  border-radius: var(--radius-md);
+  padding: 0.3rem 0.6rem;
+}
+
+.dashboard__sort-control label {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--slate-500);
+  white-space: nowrap;
+}
+
+.dashboard__sort-control select {
+  border: none;
+  background: none;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--slate-900);
+  padding: 0.1rem 0;
+}
+
+.dashboard__sort-control select:focus {
+  outline: none;
+}
+
 .dashboard__delete-completed {
   display: flex;
   align-items: center;

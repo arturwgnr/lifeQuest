@@ -60,7 +60,34 @@ function isSunk(task) {
   return task.status === "DONE";
 }
 
-export default function TaskList({ tasks, filteredTasks, onTaskSelect, onStatusChange, onQuickComplete }) {
+// Comparator for the Dashboard's sort control. Sunk tasks/chains are kept out
+// of this and pushed to the bottom separately, regardless of sort choice.
+function compareBySort(a, b, sortBy) {
+  switch (sortBy) {
+    case "oldest":
+      return new Date(a.createdAt) - new Date(b.createdAt);
+    case "stuck":
+      if (b.daysStagnant !== a.daysStagnant) return b.daysStagnant - a.daysStagnant;
+      return new Date(b.createdAt) - new Date(a.createdAt);
+    case "priority":
+      if (a.priorityType === "MAIN" && b.priorityType !== "MAIN") return -1;
+      if (a.priorityType !== "MAIN" && b.priorityType === "MAIN") return 1;
+      return new Date(b.createdAt) - new Date(a.createdAt);
+    case "dueDate": {
+      const aDue = a.dueDate ? new Date(a.dueDate).getTime() : null;
+      const bDue = b.dueDate ? new Date(b.dueDate).getTime() : null;
+      if (aDue === null && bDue === null) return new Date(b.createdAt) - new Date(a.createdAt);
+      if (aDue === null) return 1;
+      if (bDue === null) return -1;
+      return aDue - bDue;
+    }
+    case "newest":
+    default:
+      return new Date(b.createdAt) - new Date(a.createdAt);
+  }
+}
+
+export default function TaskList({ tasks, filteredTasks, sortBy, onTaskSelect, onStatusChange, onQuickComplete }) {
   const { getCategoryDisplay } = useCategories();
   const [collapsed, setCollapsed] = useState({});
 
@@ -77,9 +104,7 @@ export default function TaskList({ tasks, filteredTasks, onTaskSelect, onStatusC
       const aSunk = isSunk(a);
       const bSunk = isSunk(b);
       if (aSunk !== bSunk) return aSunk ? 1 : -1;
-      if (a.priorityType === "MAIN" && b.priorityType !== "MAIN") return -1;
-      if (a.priorityType !== "MAIN" && b.priorityType === "MAIN") return 1;
-      return new Date(b.createdAt) - new Date(a.createdAt);
+      return compareBySort(a, b, sortBy);
     }
   );
 

@@ -70,3 +70,22 @@ export function playApprove() {
 export function playReject() {
   playNotes([{ freq: 300, duration: 0.1, type: "sine", peak: 0.04 }]);
 }
+
+// Task marked Done: a brighter, slightly fuller ascending chime than playApprove
+// so completing a quest reads as a small reward.
+export function playTaskCompleted() {
+  playNotes([
+    { freq: 523, duration: 0.08, type: "sine", peak: 0.055 },
+    { freq: 659, duration: 0.1, type: "sine", peak: 0.055, offset: 0.08 },
+    { freq: 784, duration: 0.16, type: "sine", peak: 0.05, offset: 0.16 }
+  ]);
+}
+
+// Task marked Blocked: a short descending two-note dip, distinct from playReject
+// so it reads as "stalled" rather than "rejected".
+export function playTaskBlocked() {
+  playNotes([
+    { freq: 320, duration: 0.09, type: "sine", peak: 0.045 },
+    { freq: 220, duration: 0.16, type: "sine", peak: 0.045, offset: 0.08 }
+  ]);
+}

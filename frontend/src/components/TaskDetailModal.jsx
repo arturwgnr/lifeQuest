@@ -4,6 +4,7 @@ import { api } from "../api/client.js";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useCategories } from "../context/CategoriesContext.jsx";
 import { STATUSES, STATUS_LABELS, PRIORITY_LABELS } from "../constants/status.js";
+import { playTaskCompleted, playTaskBlocked } from "../utils/soundEffects.js";
 import ConfirmModal from "./ConfirmModal.jsx";
 import "../styles/TaskDetailModal.css";
 
@@ -90,6 +91,10 @@ export default function TaskDetailModal({ task, tasks, onClose, onUpdated, onDel
       onUpdated(updated);
       if (updated.status === "DONE") await refresh();
       if (leveledUpTo) onLeveledUp(leveledUpTo);
+      if (updated.status !== task.status) {
+        if (updated.status === "DONE") playTaskCompleted();
+        if (updated.status === "BLOCKED") playTaskBlocked();
+      }
       const { task: full } = await api.tasks.get(task.id);
       setDetail(full);
       setIsEditing(false);

@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { Compass, Plus, Trash2 } from "lucide-react";
+import { Compass, Plus, Trash2, ArrowUpDown } from "lucide-react";
 import { api } from "../api/client.js";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useCategories } from "../context/CategoriesContext.jsx";
 import { STATUSES, STATUS_LABELS } from "../constants/status.js";
+import { DEFAULT_SORT, SORT_OPTIONS } from "../constants/sort.js";
+import { playTaskCompleted, playTaskBlocked } from "../utils/soundEffects.js";
 import AttentionToday from "./AttentionToday.jsx";
 import TaskList from "./TaskList.jsx";
 import AddTaskModal from "./AddTaskModal.jsx";
@@ -27,6 +29,7 @@ export default function Dashboard() {
   const [filterPriority, setFilterPriority] = useState("All");
   const [filterStatus, setFilterStatus] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState(DEFAULT_SORT);
 
   const loadTasks = async () => {
     const { tasks: loaded } = await api.tasks.list();
@@ -70,6 +73,8 @@ export default function Dashboard() {
     await loadTasks();
     if (status === "DONE") await refresh();
     if (leveledUpTo) setLevelUp(leveledUpTo);
+    if (status === "DONE") playTaskCompleted();
+    if (status === "BLOCKED") playTaskBlocked();
   };
 
   const handleQuickComplete = (taskId) => applyStatusChange(taskId, "DONE");
@@ -161,16 +166,35 @@ export default function Dashboard() {
                 Align filters below to review.
               </p>
             </div>
-            {completedCount > 0 && (
-              <button
-                type="button"
-                className="dashboard__delete-completed"
-                onClick={() => setShowDeleteCompletedConfirm(true)}
-              >
-                <Trash2 size={13} />
-                Delete Completed ({completedCount})
-              </button>
-            )}
+            <div className="dashboard__filters-heading-actions">
+              <div className="dashboard__sort-control">
+                <label htmlFor="dashboard-sort">
+                  <ArrowUpDown size={12} />
+                  Sort By
+                </label>
+                <select
+                  id="dashboard-sort"
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                >
+                  {SORT_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {completedCount > 0 && (
+                <button
+                  type="button"
+                  className="dashboard__delete-completed"
+                  onClick={() => setShowDeleteCompletedConfirm(true)}
+                >
+                  <Trash2 size={13} />
+                  Delete Completed ({completedCount})
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="dashboard__filters-grid">
@@ -228,6 +252,7 @@ export default function Dashboard() {
         <TaskList
           tasks={tasks}
           filteredTasks={filteredTasks}
+          sortBy={sortBy}
           onTaskSelect={setSelectedTaskId}
           onStatusChange={applyStatusChange}
           onQuickComplete={handleQuickComplete}
