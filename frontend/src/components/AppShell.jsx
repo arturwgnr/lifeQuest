@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
-import { Compass, LayoutGrid, Sparkles, LogOut, UserCircle, BookHeart, BarChart3, Menu, X } from "lucide-react";
+import { Compass, LayoutGrid, Sparkles, LogOut, UserCircle, BookHeart, BarChart3, Menu, X, Route } from "lucide-react";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useTheme } from "../context/ThemeContext.jsx";
 import AvatarBadge from "./AvatarBadge.jsx";
@@ -75,6 +75,10 @@ export default function AppShell() {
           <NavLink to="/app" end onClick={closeDrawer} className={({ isActive }) => `app-shell__nav-link${isActive ? " app-shell__nav-link--active" : ""}`}>
             <LayoutGrid size={16} />
             Dashboard
+          </NavLink>
+          <NavLink to="/app/planning" onClick={closeDrawer} className={({ isActive }) => `app-shell__nav-link${isActive ? " app-shell__nav-link--active" : ""}`}>
+            <Route size={16} />
+            Planning Mode
           </NavLink>
           <NavLink to="/app/oracle" onClick={closeDrawer} className={({ isActive }) => `app-shell__nav-link${isActive ? " app-shell__nav-link--active" : ""}`}>
             <Sparkles size={16} />

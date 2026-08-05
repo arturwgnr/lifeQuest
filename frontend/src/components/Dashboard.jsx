@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { Compass, Plus, Trash2, ArrowUpDown } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Compass, Plus, Trash2, ArrowUpDown, Route } from "lucide-react";
 import { api } from "../api/client.js";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useCategories } from "../context/CategoriesContext.jsx";
@@ -15,6 +16,7 @@ import ConfirmModal from "./ConfirmModal.jsx";
 import "../styles/Dashboard.css";
 
 export default function Dashboard() {
+  const navigate = useNavigate();
   const { refresh } = useAuth();
   const { categories } = useCategories();
   const [tasks, setTasks] = useState([]);
@@ -136,6 +138,14 @@ export default function Dashboard() {
               </button>
             ))}
           </div>
+          <button
+            type="button"
+            className="dashboard__planning-button"
+            onClick={() => navigate("/app/planning")}
+          >
+            <Route size={14} />
+            Planning Mode
+          </button>
           <button
             type="button"
             className="dashboard__add-button"

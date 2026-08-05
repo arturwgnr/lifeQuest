@@ -73,6 +73,30 @@ router.post("/", async (req, res) => {
   res.status(201).json({ task: serializeTask(task, allTasks) });
 });
 
+// Bulk action: persist Planning Mode's custom sequence in one round trip.
+// Declared before /:id so this literal path isn't swallowed by the :id param route.
+router.patch("/reorder", async (req, res) => {
+  const { order } = req.body;
+  if (!Array.isArray(order) || order.length === 0) {
+    return res.status(400).json({ error: "order must be a non-empty array of task ids" });
+  }
+
+  const owned = await prisma.task.findMany({
+    where: { id: { in: order }, userId: req.userId },
+    select: { id: true }
+  });
+  if (owned.length !== order.length) {
+    return res.status(400).json({ error: "order contains task ids that don't exist or aren't yours" });
+  }
+
+  await prisma.$transaction(
+    order.map((id, index) => prisma.task.update({ where: { id }, data: { planningOrder: index } }))
+  );
+
+  const tasks = await prisma.task.findMany({ where: { userId: req.userId } });
+  res.json({ tasks: tasks.map(t => serializeTask(t, tasks)) });
+});
+
 router.patch("/:id", async (req, res) => {
   const existing = await prisma.task.findFirst({ where: { id: req.params.id, userId: req.userId } });
   if (!existing) return res.status(404).json({ error: "Task not found" });
