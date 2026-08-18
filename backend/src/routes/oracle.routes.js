@@ -2,6 +2,7 @@ const express = require("express");
 const { prisma } = require("../lib/prisma");
 const { requireAuth } = require("../middleware/requireAuth");
 const { getOracleResponse } = require("../lib/gemini");
+const { checkAndConsumeAiCall, AI_LIMIT_MESSAGE } = require("../lib/aiUsage");
 
 const router = express.Router();
 router.use(requireAuth);
@@ -43,6 +44,14 @@ router.post("/messages", async (req, res) => {
   await prisma.oracleMessage.create({
     data: { conversationId: conversation.id, sender: "USER", text }
   });
+
+  const usage = await checkAndConsumeAiCall(req.userId);
+  if (!usage.allowed) {
+    const limitMessage = await prisma.oracleMessage.create({
+      data: { conversationId: conversation.id, sender: "ASSISTANT", text: AI_LIMIT_MESSAGE }
+    });
+    return res.status(429).json({ conversationId: conversation.id, message: limitMessage, error: "ai_limit_reached" });
+  }
 
   const [tasks, categories] = await Promise.all([
     prisma.task.findMany({ where: { userId: req.userId }, include: { category: true } }),

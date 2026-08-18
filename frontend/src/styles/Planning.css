@@ -8,6 +8,10 @@
   font-size: 0.875rem;
 }
 
+.planning__loading .loading-indicator__label {
+  font-family: var(--font-mono);
+}
+
 .planning {
   padding: 1.25rem 1rem 2rem;
   display: flex;
@@ -79,6 +83,17 @@
   border-radius: 999px;
 }
 
+.planning__saving .loading-indicator__label {
+  font-family: var(--font-mono);
+  color: var(--violet-600);
+  animation: none;
+}
+
+[data-theme="dark"] .planning__saving {
+  background: rgba(139, 92, 246, 0.14);
+  border-color: rgba(139, 92, 246, 0.3);
+}
+
 .planning__empty {
   background: var(--surface);
   border: 1px dashed var(--slate-200);
@@ -123,6 +138,7 @@
   gap: 0.5rem;
   background: var(--surface);
   border: 1px solid var(--slate-200);
+  border-left-width: 4px;
   border-radius: var(--radius-xl);
   padding: 0.85rem;
   box-shadow: var(--shadow-sm);
@@ -137,6 +153,68 @@
 
 .planning-card--done {
   opacity: 0.6;
+}
+
+.planning-card--drag-over {
+  border-color: var(--violet-500);
+  border-left-color: var(--violet-500);
+  box-shadow: 0 0 0 2px var(--violet-100);
+}
+
+[data-theme="dark"] .planning-card--drag-over {
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.35);
+}
+
+.planning-card--drop-success {
+  animation: planningDropSuccess 0.6s ease;
+}
+
+@keyframes planningDropSuccess {
+  0% {
+    background: var(--violet-50);
+  }
+  100% {
+    background: var(--surface);
+  }
+}
+
+[data-theme="dark"] .planning-card--drop-success {
+  animation: planningDropSuccessDark 0.6s ease;
+}
+
+@keyframes planningDropSuccessDark {
+  0% {
+    background: rgba(139, 92, 246, 0.18);
+  }
+  100% {
+    background: var(--surface);
+  }
+}
+
+.planning-card--status-todo {
+  border-left-color: var(--slate-200);
+}
+
+.planning-card--status-progress {
+  border-left-color: var(--indigo-400);
+}
+
+.planning-card--status-blocked {
+  border-left-color: var(--rose-500);
+}
+
+.planning-card--status-done {
+  border-left-color: rgba(77, 197, 103, 0.801);
+}
+
+[data-theme="dark"] .planning-card--status-done {
+  border-left-color: rgba(52, 211, 153, 0.85);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .planning-card--drop-success {
+    animation: none;
+  }
 }
 
 .planning-card__top {

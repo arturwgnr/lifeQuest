@@ -8,6 +8,7 @@ const {
 } = require("../lib/auth");
 const { requireAuth } = require("../middleware/requireAuth");
 const { DEFAULT_CATEGORIES } = require("../lib/defaultCategories");
+const { DEFAULT_PILLARS } = require("../lib/defaultPillars");
 
 const router = express.Router();
 
@@ -45,7 +46,15 @@ router.post("/register", async (req, res) => {
       passwordHash,
       name,
       gender: gender || "NEUTRAL",
-      categories: { create: DEFAULT_CATEGORIES }
+      categories: { create: DEFAULT_CATEGORIES },
+      pillarGroups: {
+        create: {
+          name: "Everyday",
+          isDefault: true,
+          isActive: true,
+          pillars: { create: DEFAULT_PILLARS }
+        }
+      }
     }
   });
 

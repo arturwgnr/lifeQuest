@@ -143,6 +143,13 @@
   line-height: 1.5;
 }
 
+.profile__ai-usage {
+  font-size: 0.75rem;
+  color: var(--violet-600);
+  font-weight: 500;
+  margin: 0.4rem 0 0;
+}
+
 .profile__loading,
 .profile__empty {
   font-size: 0.8125rem;

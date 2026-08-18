@@ -151,7 +151,14 @@ async function getOracleResponse({
   };
 }
 
-async function getWeeklyJournalInsight({ entries, stagnantTaskCount }) {
+function formatTaskCompletionContext(taskCompletionContext) {
+  if (!taskCompletionContext || taskCompletionContext.length === 0) return "(no tasks completed in this window)";
+  return taskCompletionContext
+    .map(d => `${d.date}: ${d.completedCount} completed (${d.titles.join(", ")})`)
+    .join("\n");
+}
+
+async function getWeeklyJournalInsight({ entries, stagnantTaskCount, taskCompletionContext }) {
   const apiKey = process.env.GEMINI_API_KEY;
 
   if (!isConfigured(apiKey)) {
@@ -170,7 +177,8 @@ async function getWeeklyJournalInsight({ entries, stagnantTaskCount }) {
   const system = `You are a supportive, non-clinical wellbeing companion inside a personal productivity app's journal feature.
 Analyze the past week's journal entries (date, day rating 1-5, mood tags, free text) and write a SHORT (3-5 sentence)
 supportive summary of emotional patterns and trends this week. You may gently note recurring low-rated days, recurring
-emotions, or - if provided - a correlation with a high number of stagnant/blocked tasks in the user's tracker, but you
+emotions, or - if provided - a correlation with a high number of stagnant/blocked tasks or with the user's task
+completion activity for the same week below, but only if the data actually supports it. You
 must NEVER make diagnostic or clinical claims and NEVER suggest therapy or medical treatment. Keep the tone warm,
 encouraging, and grounded in what the entries actually say.`;
 
@@ -178,7 +186,7 @@ encouraging, and grounded in what the entries actually say.`;
     model: MODEL,
     systemInstruction: system,
   });
-  const userContent = `This week's journal entries:\n${entrySummary}\n\nCurrently stagnant/blocked tasks in the tracker: ${stagnantTaskCount}`;
+  const userContent = `This week's journal entries:\n${entrySummary}\n\nCurrently stagnant/blocked tasks in the tracker: ${stagnantTaskCount}\n\nTasks completed this week:\n${formatTaskCompletionContext(taskCompletionContext)}`;
 
   const result = await model.generateContent(userContent);
   return (
@@ -187,7 +195,7 @@ encouraging, and grounded in what the entries actually say.`;
   );
 }
 
-async function getEntryInsight({ newEntry, recentEntries }) {
+async function getEntryInsight({ newEntry, recentEntries, taskCompletionContext }) {
   const apiKey = process.env.GEMINI_API_KEY;
 
   if (!isConfigured(apiKey)) {
@@ -206,15 +214,16 @@ async function getEntryInsight({ newEntry, recentEntries }) {
   const system = `You are a supportive, non-clinical wellbeing companion inside a personal productivity app's journal feature.
 The user just saved a new journal entry. Write a BRIEF (1-2 sentence) supportive reflection on this entry, using the
 user's recent past entries as memory/context so you can notice patterns, recurring themes, or changes compared to
-recent days when relevant - but only mention a pattern if the entries actually support it. Never make diagnostic or
-clinical claims, never suggest therapy or medical treatment. Warm, grounded, concise tone. This supplements a weekly
-summary, so keep it short and specific to today's entry.`;
+recent days when relevant - but only mention a pattern if the entries actually support it. You may also gently note
+alignment or contrast between the user's mood and their recent task-completion activity below, if relevant, but only
+if it's clearly supported. Never make diagnostic or clinical claims, never suggest therapy or medical treatment. Warm,
+grounded, concise tone. This supplements a weekly summary, so keep it short and specific to today's entry.`;
 
   const model = client.getGenerativeModel({
     model: MODEL,
     systemInstruction: system,
   });
-  const userContent = `Recent past entries (oldest to newest, may be empty if this is the first):\n${history || "(none yet)"}\n\nToday's new entry (${newEntry.entryDate}): rating ${newEntry.dayRating}/5, moods: ${newEntry.moods.join(", ") || "none"} - "${newEntry.text.slice(0, 500)}"`;
+  const userContent = `Recent past entries (oldest to newest, may be empty if this is the first):\n${history || "(none yet)"}\n\nRecent task completion activity:\n${formatTaskCompletionContext(taskCompletionContext)}\n\nToday's new entry (${newEntry.entryDate}): rating ${newEntry.dayRating}/5, moods: ${newEntry.moods.join(", ") || "none"} - "${newEntry.text.slice(0, 500)}"`;
 
   const result = await model.generateContent(userContent);
   return result.response.text() || null;

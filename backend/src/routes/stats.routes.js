@@ -6,6 +6,7 @@ const {
   bucketCompletionTrend,
   computeStatusDurations,
   buildStreakHeatmap,
+  getTaskCompletionSummary,
   DAY_MS
 } = require("../utils/statsAggregation");
 
@@ -79,13 +80,17 @@ router.get("/overview", async (req, res) => {
   // Streak / consistency heatmap
   const streakHeatmap = buildStreakHeatmap(doneDates, heatmapStart);
 
+  // Day-by-day completion history, for the history panel + "story mode" timeline
+  const taskHistory = await getTaskCompletionSummary(prisma, req.userId, rawStart, new Date());
+
   res.json({
     window,
     completionTrend,
     categoryBreakdown,
     timeInStatus,
     mainSideBalance,
-    streakHeatmap
+    streakHeatmap,
+    taskHistory
   });
 });
 

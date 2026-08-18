@@ -54,6 +54,36 @@
   border-color: #275a42;
 }
 
+/* Dark-mode recalibration: --slate-100 resolves identically to --surface in
+   dark mode, so empty cells would otherwise vanish into the card background.
+   The light-mode intensity greens are also hardcoded with no dark
+   counterpart, so they need their own brighter/more saturated ramp - a dark
+   surface needs lighter accents to read as "more", the inverse of light mode. */
+[data-theme="dark"] .streak-heatmap__cell--0 {
+  background: var(--slate-200);
+  border-color: var(--slate-300);
+}
+
+[data-theme="dark"] .streak-heatmap__cell--1 {
+  background: #1b3a2c;
+  border-color: #234a37;
+}
+
+[data-theme="dark"] .streak-heatmap__cell--2 {
+  background: #205e42;
+  border-color: #2a7350;
+}
+
+[data-theme="dark"] .streak-heatmap__cell--3 {
+  background: #2d8f60;
+  border-color: #35a570;
+}
+
+[data-theme="dark"] .streak-heatmap__cell--4 {
+  background: #3ddc84;
+  border-color: #4fe895;
+}
+
 .streak-heatmap__legend {
   display: flex;
   align-items: center;

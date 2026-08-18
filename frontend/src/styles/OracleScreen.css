@@ -60,6 +60,17 @@
   color: var(--slate-400);
 }
 
+.oracle-screen__chat-header-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.oracle-screen__ai-usage {
+  color: var(--violet-600);
+  font-weight: 600;
+}
+
 .oracle-screen__presets {
   padding: 0.5rem 1rem;
   border-bottom: 1px solid rgba(241, 245, 249, 0.6);

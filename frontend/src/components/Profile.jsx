@@ -7,6 +7,7 @@ import { PROFILE_ICON_OPTIONS } from "../constants/profileIcons.js";
 import AvatarBadge from "./AvatarBadge.jsx";
 import ProfilePictureBadge from "./ProfilePictureBadge.jsx";
 import CategoryManager from "./CategoryManager.jsx";
+import LoadingIndicator from "./LoadingIndicator.jsx";
 import "../styles/Profile.css";
 
 export default function Profile() {
@@ -14,6 +15,7 @@ export default function Profile() {
   const { getCategoryDisplay } = useCategories();
 
   const [summary, setSummary] = useState(null);
+  const [aiUsage, setAiUsage] = useState(null);
   const [name, setName] = useState(user.name);
   const [gender, setGender] = useState(user.gender);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
@@ -22,6 +24,7 @@ export default function Profile() {
 
   useEffect(() => {
     api.profile.summary().then(setSummary);
+    api.profile.aiUsage().then(setAiUsage);
   }, []);
 
   const handleSaveProfile = async e => {
@@ -83,6 +86,11 @@ export default function Profile() {
           <p className="profile__xp-caption">
             {user.xp % 100} / 100 XP to level {user.level + 1}. XP is purely cosmetic and never unlocks functionality.
           </p>
+          {aiUsage && (
+            <p className="profile__ai-usage">
+              {aiUsage.remaining}/{aiUsage.limit} Oracle &amp; Journal AI credits left today
+            </p>
+          )}
         </section>
 
         <section className="profile__card">
@@ -110,7 +118,9 @@ export default function Profile() {
         <section className="profile__card">
           <h3>Pending Work</h3>
           {!summary ? (
-            <p className="profile__loading">Loading...</p>
+            <div className="profile__loading">
+              <LoadingIndicator variant="inline" size="sm" label="Loading..." />
+            </div>
           ) : (
             <>
               <div className="profile__priority-split">

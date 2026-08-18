@@ -66,4 +66,38 @@ function buildStreakHeatmap(doneDates, startDate) {
   return days;
 }
 
-module.exports = { windowStartFor, dateKey, bucketCompletionTrend, computeStatusDurations, buildStreakHeatmap, DAY_MS };
+// Day-by-day record of completed tasks in [startDate, endDate). Shared by the
+// Stats task-history panel and the Journal AI insight context, so both read
+// from the same TaskStatusHistory-derived source instead of duplicating logic.
+async function getTaskCompletionSummary(prisma, userId, startDate, endDate) {
+  const doneTransitions = await prisma.taskStatusHistory.findMany({
+    where: {
+      status: "DONE",
+      changedAt: { gte: startDate, lt: endDate },
+      task: { userId }
+    },
+    include: { task: { select: { title: true, categoryId: true, priorityType: true } } },
+    orderBy: { changedAt: "asc" }
+  });
+
+  const byDay = new Map();
+  for (const transition of doneTransitions) {
+    const key = dateKey(transition.changedAt);
+    if (!byDay.has(key)) byDay.set(key, { date: key, completedCount: 0, titles: [] });
+    const bucket = byDay.get(key);
+    bucket.completedCount += 1;
+    bucket.titles.push(transition.task.title);
+  }
+
+  return Array.from(byDay.values()).sort((a, b) => (a.date < b.date ? -1 : 1));
+}
+
+module.exports = {
+  windowStartFor,
+  dateKey,
+  bucketCompletionTrend,
+  computeStatusDurations,
+  buildStreakHeatmap,
+  getTaskCompletionSummary,
+  DAY_MS
+};

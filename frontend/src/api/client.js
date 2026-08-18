@@ -49,7 +49,8 @@ export const api = {
       request(`/categories/${id}`, { method: "DELETE", body: JSON.stringify({ reassignToId }) })
   },
   profile: {
-    summary: () => request("/profile/summary")
+    summary: () => request("/profile/summary"),
+    aiUsage: () => request("/profile/ai-usage")
   },
   journal: {
     list: () => request("/journal/entries"),
@@ -70,5 +71,20 @@ export const api = {
       request(`/oracle/suggestions/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
     approveSuggestion: id => request(`/oracle/suggestions/${id}/approve`, { method: "POST" }),
     rejectSuggestion: id => request(`/oracle/suggestions/${id}/reject`, { method: "POST" })
+  },
+  pillars: {
+    groups: {
+      list: () => request("/pillars/groups"),
+      create: body => request("/pillars/groups", { method: "POST", body: JSON.stringify(body) }),
+      update: (id, body) => request(`/pillars/groups/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+      activate: id => request(`/pillars/groups/${id}/activate`, { method: "PATCH" }),
+      remove: id => request(`/pillars/groups/${id}`, { method: "DELETE" })
+    },
+    logs: {
+      list: month => request(`/pillars/logs?month=${month}`),
+      get: date => request(`/pillars/logs/${date}`),
+      upsert: (date, body) => request(`/pillars/logs/${date}`, { method: "PUT", body: JSON.stringify(body) })
+    },
+    summary: () => request("/pillars/summary")
   }
 };

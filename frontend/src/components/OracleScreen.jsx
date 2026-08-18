@@ -9,6 +9,7 @@ import {
   playApprove,
   playReject,
 } from "../utils/soundEffects.js";
+import LoadingIndicator from "./LoadingIndicator.jsx";
 import "../styles/OracleScreen.css";
 
 const RECORDING_MAX_DURATION_MS = 60 * 1000;
@@ -49,6 +50,7 @@ export default function OracleScreen() {
   const [isSending, setIsSending] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
+  const [aiUsage, setAiUsage] = useState(null);
 
   const [editingSuggestionId, setEditingSuggestionId] = useState(null);
   const [editTitle, setEditTitle] = useState("");
@@ -73,6 +75,7 @@ export default function OracleScreen() {
       await reloadConversation();
       setIsLoading(false);
     })();
+    api.profile.aiUsage().then(setAiUsage);
   }, []);
 
   useEffect(() => {
@@ -171,6 +174,7 @@ export default function OracleScreen() {
       await reloadConversation();
     } finally {
       setIsSending(false);
+      api.profile.aiUsage().then(setAiUsage);
     }
   };
 
@@ -225,7 +229,9 @@ export default function OracleScreen() {
 
   if (isLoading)
     return (
-      <div className="oracle-screen__loading">Consulting the Oracle...</div>
+      <div className="oracle-screen__loading">
+        <LoadingIndicator variant="panel" size="lg" label="Consulting the Oracle..." />
+      </div>
     );
 
   return (
@@ -236,7 +242,14 @@ export default function OracleScreen() {
             <Sparkles size={16} />
             <h3>The Oracle's Whispers</h3>
           </div>
-          <span>Powered by Claude</span>
+          <span className="oracle-screen__chat-header-meta">
+            Powered by the Oracle
+            {aiUsage && (
+              <span className="oracle-screen__ai-usage">
+                {aiUsage.remaining}/{aiUsage.limit} today
+              </span>
+            )}
+          </span>
         </div>
 
         <div className="oracle-screen__presets">

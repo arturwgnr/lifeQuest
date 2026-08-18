@@ -10,6 +10,7 @@ import { STATUSES, STATUS_LABELS, STATUS_VISUAL, PRIORITY_LABELS } from "../cons
 import { playTaskCompleted, playTaskBlocked } from "../utils/soundEffects.js";
 import TaskDetailModal from "./TaskDetailModal.jsx";
 import LevelUpNotification from "./LevelUpNotification.jsx";
+import LoadingIndicator from "./LoadingIndicator.jsx";
 import "../styles/Planning.css";
 
 // Tasks that already have a planningOrder sort by it; anything never dragged
@@ -24,7 +25,7 @@ function planningComparator(a, b) {
   return new Date(b.createdAt) - new Date(a.createdAt);
 }
 
-function PlanningCard({ task, index, total, onStatusChange, onMove, onSelect }) {
+function PlanningCard({ task, index, total, onStatusChange, onMove, onSelect, isDropTarget, justReordered }) {
   const { getCategoryDisplay } = useCategories();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id });
   const config = getCategoryDisplay(task.categoryId);
@@ -36,12 +37,19 @@ function PlanningCard({ task, index, total, onStatusChange, onMove, onSelect }) 
     transition
   };
 
+  const classes = [
+    "planning-card",
+    `planning-card--status-${statusTone}`,
+    task.status === "DONE" && "planning-card--done",
+    isDragging && "planning-card--dragging",
+    isDropTarget && "planning-card--drag-over",
+    justReordered && "planning-card--drop-success"
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className={`planning-card ${task.status === "DONE" ? "planning-card--done" : ""} ${isDragging ? "planning-card--dragging" : ""}`}
-    >
+    <div ref={setNodeRef} style={style} className={classes}>
       <div className="planning-card__top">
         <span className="planning-card__index">{index + 1}</span>
         <button type="button" className="planning-card__handle" {...attributes} {...listeners} aria-label="Drag to reorder">
@@ -109,6 +117,9 @@ export default function Planning() {
   const [selectedTaskId, setSelectedTaskId] = useState(null);
   const [levelUp, setLevelUp] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [activeId, setActiveId] = useState(null);
+  const [overId, setOverId] = useState(null);
+  const [justReorderedIds, setJustReorderedIds] = useState(new Set());
 
   const loadTasks = async () => {
     const { tasks: loaded } = await api.tasks.list();
@@ -140,13 +151,20 @@ export default function Planning() {
     try {
       const { tasks: updated } = await api.tasks.reorder(orderedIds);
       setTasks(updated);
+      setJustReorderedIds(new Set(orderedIds));
+      setTimeout(() => setJustReorderedIds(new Set()), 900);
     } finally {
       setIsSaving(false);
     }
   };
 
+  const handleDragStart = event => setActiveId(event.active.id);
+  const handleDragOver = event => setOverId(event.over ? event.over.id : null);
+
   const handleDragEnd = event => {
     const { active, over } = event;
+    setActiveId(null);
+    setOverId(null);
     if (!over || active.id === over.id) return;
     const oldIndex = sequence.findIndex(t => t.id === active.id);
     const newIndex = sequence.findIndex(t => t.id === over.id);
@@ -180,7 +198,13 @@ export default function Planning() {
 
   const selectedTask = tasks.find(t => t.id === selectedTaskId) || null;
 
-  if (isLoading) return <div className="planning__loading">Loading your roadmap...</div>;
+  if (isLoading) {
+    return (
+      <div className="planning__loading">
+        <LoadingIndicator variant="panel" size="lg" label="Loading your roadmap..." />
+      </div>
+    );
+  }
 
   return (
     <div className="planning">
@@ -198,14 +222,24 @@ export default function Planning() {
         </label>
       </div>
 
-      {isSaving && <span className="planning__saving">Saving order…</span>}
+      {isSaving && (
+        <span className="planning__saving">
+          <LoadingIndicator variant="inline" size="sm" label="Saving order…" />
+        </span>
+      )}
 
       {sequence.length === 0 ? (
         <div className="planning__empty">
           <p>No open quests to sequence yet. Forge a quest from the Dashboard to start building your roadmap.</p>
         </div>
       ) : (
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragStart={handleDragStart}
+          onDragOver={handleDragOver}
+          onDragEnd={handleDragEnd}
+        >
           <SortableContext items={sequence.map(t => t.id)} strategy={rectSortingStrategy}>
             <div className="planning__sequence">
               {sequence.map((task, index) => (
@@ -217,6 +251,8 @@ export default function Planning() {
                   onStatusChange={applyStatusChange}
                   onMove={handleMove}
                   onSelect={setSelectedTaskId}
+                  isDropTarget={overId === task.id && activeId !== task.id}
+                  justReordered={justReorderedIds.has(task.id)}
                 />
               ))}
             </div>

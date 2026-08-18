@@ -6,6 +6,8 @@ import { TONE_HEX } from "../constants/tones.js";
 import BarChart from "./BarChart.jsx";
 import StackedBar from "./StackedBar.jsx";
 import StreakHeatmap from "./StreakHeatmap.jsx";
+import TaskHistoryPanel from "./TaskHistoryPanel.jsx";
+import LoadingIndicator from "./LoadingIndicator.jsx";
 import "../styles/Stats.css";
 
 function formatTrendLabel(periodLabel, window) {
@@ -50,7 +52,9 @@ export default function Stats() {
       </div>
 
       {isLoading || !data ? (
-        <p className="stats__loading">Crunching the numbers...</p>
+        <div className="stats__loading">
+          <LoadingIndicator variant="panel" size="lg" label="Crunching the numbers..." />
+        </div>
       ) : (
         <div className="stats__grid">
           <section className="stats__card">
@@ -136,6 +140,15 @@ export default function Stats() {
             </h3>
             <p className="stats__card-sub">Days with at least one completed quest.</p>
             <StreakHeatmap days={data.streakHeatmap} />
+          </section>
+
+          <section className="stats__card stats__card--wide">
+            <h3>
+              <LayoutGrid size={15} />
+              Task Completion History
+            </h3>
+            <p className="stats__card-sub">Day-by-day record of completed quests &mdash; the shape of your follow-through over time.</p>
+            <TaskHistoryPanel history={data.taskHistory} />
           </section>
         </div>
       )}

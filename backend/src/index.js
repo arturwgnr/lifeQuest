@@ -11,6 +11,7 @@ const { router: categoriesRouter } = require("./routes/categories.routes");
 const { router: profileRouter } = require("./routes/profile.routes");
 const { router: journalRouter } = require("./routes/journal.routes");
 const { router: statsRouter } = require("./routes/stats.routes");
+const { router: pillarsRouter } = require("./routes/pillars.routes");
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -33,6 +34,7 @@ app.use("/api/categories", categoriesRouter);
 app.use("/api/profile", profileRouter);
 app.use("/api/journal", journalRouter);
 app.use("/api/stats", statsRouter);
+app.use("/api/pillars", pillarsRouter);
 
 app.use((err, req, res, next) => {
   console.error(err);

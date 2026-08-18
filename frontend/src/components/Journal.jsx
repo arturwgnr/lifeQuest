@@ -4,6 +4,7 @@ import { Sparkles, Trash2, Save, BarChart2 } from "lucide-react";
 import { api } from "../api/client.js";
 import { MOOD_OPTIONS, ratingColor } from "../constants/moods.js";
 import JournalCalendar from "./JournalCalendar.jsx";
+import LoadingIndicator from "./LoadingIndicator.jsx";
 import "../styles/Journal.css";
 
 function todayKey() {
@@ -17,12 +18,14 @@ export default function Journal() {
   const [month, setMonth] = useState(() => new Date(new Date().toDateString()));
   const [insight, setInsight] = useState(null);
   const [insightLoading, setInsightLoading] = useState(true);
+  const [weeklyAiLimitReached, setWeeklyAiLimitReached] = useState(false);
 
   const [text, setText] = useState("");
   const [dayRating, setDayRating] = useState(3);
   const [moods, setMoods] = useState([]);
   const [isSaving, setIsSaving] = useState(false);
   const [savedNotice, setSavedNotice] = useState(false);
+  const [entryAiLimitReached, setEntryAiLimitReached] = useState(false);
 
   const entriesByDate = useMemo(() => new Map(entries.map(e => [e.entryDate.slice(0, 10), e])), [entries]);
 
@@ -40,8 +43,9 @@ export default function Journal() {
 
     (async () => {
       setInsightLoading(true);
-      const { insight: loaded } = await api.journal.generateInsight();
+      const { insight: loaded, aiLimitReached } = await api.journal.generateInsight();
       setInsight(loaded);
+      setWeeklyAiLimitReached(!!aiLimitReached);
       setInsightLoading(false);
     })();
   }, []);
@@ -61,7 +65,8 @@ export default function Journal() {
     if (!text.trim()) return;
     setIsSaving(true);
     try {
-      await api.journal.upsert(selectedDate, { text, dayRating, moods });
+      const { aiLimitReached } = await api.journal.upsert(selectedDate, { text, dayRating, moods });
+      setEntryAiLimitReached(!!aiLimitReached);
       await loadEntries();
       setSavedNotice(true);
       setTimeout(() => setSavedNotice(false), 2000);
@@ -86,7 +91,13 @@ export default function Journal() {
     timeZone: "UTC"
   });
 
-  if (isLoading) return <div className="journal__loading">Opening your journal...</div>;
+  if (isLoading) {
+    return (
+      <div className="journal__loading">
+        <LoadingIndicator variant="panel" size="lg" label="Opening your journal..." />
+      </div>
+    );
+  }
 
   return (
     <div className="journal">
@@ -152,8 +163,12 @@ export default function Journal() {
               </button>
             )}
             <button type="button" className="journal__save" onClick={handleSave} disabled={isSaving || !text.trim()}>
-              <Save size={14} />
-              {isSaving ? "Saving..." : "Save Entry"}
+              {isSaving ? <LoadingIndicator variant="inline" size="sm" label="Saving..." /> : (
+                <>
+                  <Save size={14} />
+                  Save Entry
+                </>
+              )}
             </button>
             {savedNotice && <span className="journal__saved-notice">Saved</span>}
           </div>
@@ -163,6 +178,9 @@ export default function Journal() {
               <Sparkles size={13} />
               <p>{entriesByDate.get(selectedDate).insightText}</p>
             </div>
+          )}
+          {entryAiLimitReached && (
+            <p className="journal__ai-limit-note">Daily AI limit reached — insight will resume tomorrow.</p>
           )}
         </section>
 
@@ -181,7 +199,11 @@ export default function Journal() {
               Weekly Insight
             </h4>
             {insightLoading ? (
-              <p className="journal__insight-loading">Reflecting on your week...</p>
+              <div className="journal__insight-loading">
+                <LoadingIndicator variant="inline" size="sm" label="Reflecting on your week..." />
+              </div>
+            ) : weeklyAiLimitReached ? (
+              <p className="journal__ai-limit-note">Daily AI limit reached — your weekly insight will resume tomorrow.</p>
             ) : insight ? (
               <>
                 <p className="journal__insight-range">

@@ -13,6 +13,8 @@ import Journal from "./components/Journal.jsx";
 import JournalStats from "./components/JournalStats.jsx";
 import Stats from "./components/Stats.jsx";
 import Planning from "./components/Planning.jsx";
+import Pillars from "./components/Pillars.jsx";
+import EditPillars from "./components/EditPillars.jsx";
 
 function FullScreenLoader() {
   return (
@@ -74,6 +76,8 @@ export default function App() {
       >
         <Route index element={<Dashboard />} />
         <Route path="planning" element={<Planning />} />
+        <Route path="pillars" element={<Pillars />} />
+        <Route path="pillars/edit" element={<EditPillars />} />
         <Route path="oracle" element={<OracleScreen />} />
         <Route path="profile" element={<Profile />} />
         <Route path="journal" element={<Journal />} />

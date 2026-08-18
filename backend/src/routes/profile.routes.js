@@ -1,9 +1,15 @@
 const express = require("express");
 const { prisma } = require("../lib/prisma");
 const { requireAuth } = require("../middleware/requireAuth");
+const { getAiUsage } = require("../lib/aiUsage");
 
 const router = express.Router();
 router.use(requireAuth);
+
+router.get("/ai-usage", async (req, res) => {
+  const usage = await getAiUsage(req.userId);
+  res.json(usage);
+});
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 

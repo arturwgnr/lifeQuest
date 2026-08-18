@@ -195,6 +195,16 @@
   opacity: 0.6;
 }
 
+.journal__save .loading-indicator__label {
+  color: white;
+  animation: none;
+}
+
+.journal__save .loading-indicator__spinner {
+  border-color: rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+}
+
 .journal__saved-notice {
   font-size: 0.75rem;
   color: var(--emerald-700);
@@ -261,6 +271,12 @@
   font-size: 0.8125rem;
   color: var(--indigo-500);
   margin: 0;
+}
+
+.journal__ai-limit-note {
+  font-size: 0.8125rem;
+  color: var(--amber-600);
+  margin: 0.5rem 0 0;
 }
 
 @media (min-width: 1024px) {

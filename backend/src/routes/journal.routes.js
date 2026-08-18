@@ -2,6 +2,8 @@ const express = require("express");
 const { prisma } = require("../lib/prisma");
 const { requireAuth } = require("../middleware/requireAuth");
 const { getWeeklyJournalInsight, getEntryInsight } = require("../lib/gemini");
+const { checkAndConsumeAiCall } = require("../lib/aiUsage");
+const { getTaskCompletionSummary } = require("../utils/statsAggregation");
 
 const router = express.Router();
 router.use(requireAuth);
@@ -52,27 +54,39 @@ router.put("/entries/:date", async (req, res) => {
 
   // Brief per-entry reflection, generated with memory of recent past entries.
   // Supplements (doesn't replace) the weekly insight, so failures here shouldn't fail the save.
-  const recentPastEntries = await prisma.journalEntry.findMany({
-    where: { userId: req.userId, entryDate: { lt: entryDate } },
-    orderBy: { entryDate: "desc" },
-    take: 7
-  });
-
   let entryWithInsight = entry;
-  try {
-    const insightText = await getEntryInsight({
-      newEntry: { entryDate: req.params.date, dayRating: entry.dayRating, moods: entry.moods, text: entry.text },
-      recentEntries: recentPastEntries
-        .slice()
-        .reverse()
-        .map(e => ({ entryDate: e.entryDate.toISOString().slice(0, 10), dayRating: e.dayRating, moods: e.moods, text: e.text }))
-    });
-    entryWithInsight = await prisma.journalEntry.update({ where: { id: entry.id }, data: { insightText } });
-  } catch (err) {
-    console.error("Per-entry insight generation failed:", err);
+  let aiLimitReached = false;
+
+  const usage = await checkAndConsumeAiCall(req.userId);
+  if (!usage.allowed) {
+    aiLimitReached = true;
+  } else {
+    const sevenDaysBeforeEntry = new Date(entryDate.getTime() - 7 * DAY_MS);
+    const [recentPastEntries, taskCompletionContext] = await Promise.all([
+      prisma.journalEntry.findMany({
+        where: { userId: req.userId, entryDate: { lt: entryDate } },
+        orderBy: { entryDate: "desc" },
+        take: 7
+      }),
+      getTaskCompletionSummary(prisma, req.userId, sevenDaysBeforeEntry, entryDate)
+    ]);
+
+    try {
+      const insightText = await getEntryInsight({
+        newEntry: { entryDate: req.params.date, dayRating: entry.dayRating, moods: entry.moods, text: entry.text },
+        recentEntries: recentPastEntries
+          .slice()
+          .reverse()
+          .map(e => ({ entryDate: e.entryDate.toISOString().slice(0, 10), dayRating: e.dayRating, moods: e.moods, text: e.text })),
+        taskCompletionContext
+      });
+      entryWithInsight = await prisma.journalEntry.update({ where: { id: entry.id }, data: { insightText } });
+    } catch (err) {
+      console.error("Per-entry insight generation failed:", err);
+    }
   }
 
-  res.json({ entry: entryWithInsight });
+  res.json({ entry: entryWithInsight, aiLimitReached });
 });
 
 router.delete("/entries/:date", async (req, res) => {
@@ -119,9 +133,17 @@ router.post("/insights/generate", async (req, res) => {
     return res.json({ insight: latest || null, generated: false });
   }
 
-  const stagnantTaskCount = await prisma.task.count({
-    where: { userId: req.userId, status: { in: ["BLOCKED", "IN_PROGRESS"] } }
-  });
+  const usage = await checkAndConsumeAiCall(req.userId);
+  if (!usage.allowed) {
+    return res.json({ insight: latest || null, generated: false, aiLimitReached: true });
+  }
+
+  const [stagnantTaskCount, taskCompletionContext] = await Promise.all([
+    prisma.task.count({
+      where: { userId: req.userId, status: { in: ["BLOCKED", "IN_PROGRESS"] } }
+    }),
+    getTaskCompletionSummary(prisma, req.userId, windowStart, windowEnd)
+  ]);
 
   const summaryText = await getWeeklyJournalInsight({
     entries: entries.map(e => ({
@@ -130,7 +152,8 @@ router.post("/insights/generate", async (req, res) => {
       moods: e.moods,
       text: e.text
     })),
-    stagnantTaskCount
+    stagnantTaskCount,
+    taskCompletionContext
   });
 
   const insight = await prisma.journalWeeklyInsight.create({

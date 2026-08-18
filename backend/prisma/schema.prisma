@@ -47,6 +47,8 @@ model User {
   level         Int      @default(1)
   avatarStage   Int      @default(1)
   profileIcon   String   @default("Shield")
+  aiCallsToday    Int      @default(0)
+  aiCallsResetAt  DateTime @default(now())
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -55,6 +57,8 @@ model User {
   conversations   OracleConversation[]
   journalEntries  JournalEntry[]
   journalInsights JournalWeeklyInsight[]
+  pillarGroups    PillarGroup[]
+  dailyPillarLogs DailyPillarLog[]
 }
 
 model Category {
@@ -178,4 +182,62 @@ model JournalWeeklyInsight {
   createdAt   DateTime @default(now())
 
   @@index([userId])
+}
+
+model PillarGroup {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  isDefault Boolean  @default(false)
+  isActive  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  pillars Pillar[]
+  logs    DailyPillarLog[]
+
+  @@index([userId])
+}
+
+model Pillar {
+  id        String      @id @default(cuid())
+  groupId   String
+  group     PillarGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  title     String
+  order     Int         @default(0)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  entries DailyPillarLogEntry[]
+
+  @@index([groupId])
+}
+
+model DailyPillarLog {
+  id        String      @id @default(cuid())
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      DateTime
+  groupId   String
+  group     PillarGroup @relation(fields: [groupId], references: [id])
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  entries DailyPillarLogEntry[]
+
+  @@unique([userId, date])
+  @@index([userId])
+}
+
+model DailyPillarLogEntry {
+  id        String         @id @default(cuid())
+  logId     String
+  log       DailyPillarLog @relation(fields: [logId], references: [id], onDelete: Cascade)
+  pillarId  String
+  pillar    Pillar         @relation(fields: [pillarId], references: [id])
+  completed Boolean        @default(false)
+
+  @@unique([logId, pillarId])
+  @@index([logId])
 }
