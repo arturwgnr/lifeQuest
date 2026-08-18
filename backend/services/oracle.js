@@ -1,4 +1,4 @@
-const { GoogleGenerativeAI } = require("@google/generative-ai");
+const { GoogleGenAI } = require("@google/genai");
 
 const MODEL = "gemini-flash-latest";
 
@@ -16,12 +16,7 @@ Rules you must follow:
 // Kept isolated so a route can wire this up later without coupling the two.
 async function askOracle(userMessage, conversationHistory = []) {
   const apiKey = process.env.GEMINI_API_KEY;
-  const client = new GoogleGenerativeAI(apiKey);
-
-  const model = client.getGenerativeModel({
-    model: MODEL,
-    systemInstruction: SYSTEM_INSTRUCTION,
-  });
+  const ai = new GoogleGenAI({ apiKey });
 
   const contents = [
     ...conversationHistory.map((h) => ({
@@ -31,8 +26,12 @@ async function askOracle(userMessage, conversationHistory = []) {
     { role: "user", parts: [{ text: userMessage }] },
   ];
 
-  const result = await model.generateContent({ contents });
-  return result.response.text();
+  const result = await ai.models.generateContent({
+    model: MODEL,
+    contents,
+    config: { systemInstruction: SYSTEM_INSTRUCTION },
+  });
+  return result.text;
 }
 
 module.exports = { askOracle };

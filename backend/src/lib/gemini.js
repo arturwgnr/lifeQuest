@@ -1,4 +1,4 @@
-const { GoogleGenerativeAI, SchemaType } = require("@google/generative-ai");
+const { GoogleGenAI, FunctionCallingConfigMode, Type } = require("@google/genai");
 
 const MODEL = "gemini-flash-latest";
 
@@ -14,42 +14,42 @@ function buildProposeQuestsTool(categoryNames) {
         description:
           "Record the Oracle's conversational reply, an optional single clarifying question, and any structured task suggestions parsed from the user's narration.",
         parameters: {
-          type: SchemaType.OBJECT,
+          type: Type.OBJECT,
           properties: {
             reply: {
-              type: SchemaType.STRING,
+              type: Type.STRING,
               description:
                 "Brief supportive conversational feedback (1-3 sentences), subtle mentor tone, never childish.",
             },
             question: {
-              type: SchemaType.STRING,
+              type: Type.STRING,
               description:
                 "Exactly one clarifying question if there's ambiguity about whether an existing task is done or this is a duplicate. Omit entirely if nothing is ambiguous.",
             },
             suggestions: {
-              type: SchemaType.ARRAY,
+              type: Type.ARRAY,
               description:
                 "Up to 3 structured task suggestions extracted from the narration. Empty array if none apply.",
               items: {
-                type: SchemaType.OBJECT,
+                type: Type.OBJECT,
                 properties: {
-                  title: { type: SchemaType.STRING },
+                  title: { type: Type.STRING },
                   category: {
-                    type: SchemaType.STRING,
+                    type: Type.STRING,
                     enum: categoryNames,
                     description:
                       "Must be exactly one of the user's existing category names.",
                   },
                   priorityType: {
-                    type: SchemaType.STRING,
+                    type: Type.STRING,
                     enum: ["MAIN", "SIDE"],
                   },
                   xpValue: {
-                    type: SchemaType.INTEGER,
+                    type: Type.INTEGER,
                     description:
                       "10-20 for small side tasks, 40-60 for main tasks, 80-100 for large milestones.",
                   },
-                  notes: { type: SchemaType.STRING },
+                  notes: { type: Type.STRING },
                 },
                 required: ["title", "category", "priorityType", "xpValue"],
               },
@@ -111,18 +111,7 @@ async function getOracleResponse({
     };
   }
 
-  const client = new GoogleGenerativeAI(apiKey);
-  const model = client.getGenerativeModel({
-    model: MODEL,
-    systemInstruction: buildSystemPrompt(existingTasks, categoryNames),
-    tools: [buildProposeQuestsTool(categoryNames)],
-    toolConfig: {
-      functionCallingConfig: {
-        mode: "ANY",
-        allowedFunctionNames: ["propose_quests"],
-      },
-    },
-  });
+  const ai = new GoogleGenAI({ apiKey });
 
   const contents = [
     ...history.map((h) => ({
@@ -132,8 +121,22 @@ async function getOracleResponse({
     { role: "user", parts: [{ text: message }] },
   ];
 
-  const result = await model.generateContent({ contents });
-  const call = result.response.functionCalls()?.[0];
+  const result = await ai.models.generateContent({
+    model: MODEL,
+    contents,
+    config: {
+      systemInstruction: buildSystemPrompt(existingTasks, categoryNames),
+      tools: [buildProposeQuestsTool(categoryNames)],
+      toolConfig: {
+        functionCallingConfig: {
+          mode: FunctionCallingConfigMode.ANY,
+          allowedFunctionNames: ["propose_quests"],
+        },
+      },
+    },
+  });
+
+  const call = result.functionCalls?.[0];
   if (!call) {
     return {
       reply:
@@ -165,7 +168,7 @@ async function getWeeklyJournalInsight({ entries, stagnantTaskCount, taskComplet
     return "Weekly insight is unavailable in offline mode because no GEMINI_API_KEY is configured. Once a key is set, the Oracle will summarize emotional patterns from your journal entries here.";
   }
 
-  const client = new GoogleGenerativeAI(apiKey);
+  const ai = new GoogleGenAI({ apiKey });
 
   const entrySummary = entries
     .map(
@@ -182,17 +185,14 @@ completion activity for the same week below, but only if the data actually suppo
 must NEVER make diagnostic or clinical claims and NEVER suggest therapy or medical treatment. Keep the tone warm,
 encouraging, and grounded in what the entries actually say.`;
 
-  const model = client.getGenerativeModel({
-    model: MODEL,
-    systemInstruction: system,
-  });
   const userContent = `This week's journal entries:\n${entrySummary}\n\nCurrently stagnant/blocked tasks in the tracker: ${stagnantTaskCount}\n\nTasks completed this week:\n${formatTaskCompletionContext(taskCompletionContext)}`;
 
-  const result = await model.generateContent(userContent);
-  return (
-    result.response.text() ||
-    "The Oracle could not generate an insight this week."
-  );
+  const result = await ai.models.generateContent({
+    model: MODEL,
+    contents: userContent,
+    config: { systemInstruction: system },
+  });
+  return result.text || "The Oracle could not generate an insight this week.";
 }
 
 async function getEntryInsight({ newEntry, recentEntries, taskCompletionContext }) {
@@ -202,7 +202,7 @@ async function getEntryInsight({ newEntry, recentEntries, taskCompletionContext 
     return "Offline mode: set GEMINI_API_KEY to unlock a short reflection on this entry after each save.";
   }
 
-  const client = new GoogleGenerativeAI(apiKey);
+  const ai = new GoogleGenAI({ apiKey });
 
   const history = recentEntries
     .map(
@@ -219,14 +219,14 @@ alignment or contrast between the user's mood and their recent task-completion a
 if it's clearly supported. Never make diagnostic or clinical claims, never suggest therapy or medical treatment. Warm,
 grounded, concise tone. This supplements a weekly summary, so keep it short and specific to today's entry.`;
 
-  const model = client.getGenerativeModel({
-    model: MODEL,
-    systemInstruction: system,
-  });
   const userContent = `Recent past entries (oldest to newest, may be empty if this is the first):\n${history || "(none yet)"}\n\nRecent task completion activity:\n${formatTaskCompletionContext(taskCompletionContext)}\n\nToday's new entry (${newEntry.entryDate}): rating ${newEntry.dayRating}/5, moods: ${newEntry.moods.join(", ") || "none"} - "${newEntry.text.slice(0, 500)}"`;
 
-  const result = await model.generateContent(userContent);
-  return result.response.text() || null;
+  const result = await ai.models.generateContent({
+    model: MODEL,
+    contents: userContent,
+    config: { systemInstruction: system },
+  });
+  return result.text || null;
 }
 
 module.exports = {

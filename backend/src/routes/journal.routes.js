@@ -145,22 +145,27 @@ router.post("/insights/generate", async (req, res) => {
     getTaskCompletionSummary(prisma, req.userId, windowStart, windowEnd)
   ]);
 
-  const summaryText = await getWeeklyJournalInsight({
-    entries: entries.map(e => ({
-      entryDate: e.entryDate.toISOString().slice(0, 10),
-      dayRating: e.dayRating,
-      moods: e.moods,
-      text: e.text
-    })),
-    stagnantTaskCount,
-    taskCompletionContext
-  });
+  try {
+    const summaryText = await getWeeklyJournalInsight({
+      entries: entries.map(e => ({
+        entryDate: e.entryDate.toISOString().slice(0, 10),
+        dayRating: e.dayRating,
+        moods: e.moods,
+        text: e.text
+      })),
+      stagnantTaskCount,
+      taskCompletionContext
+    });
 
-  const insight = await prisma.journalWeeklyInsight.create({
-    data: { userId: req.userId, weekStart: windowStart, weekEnd: windowEnd, summaryText }
-  });
+    const insight = await prisma.journalWeeklyInsight.create({
+      data: { userId: req.userId, weekStart: windowStart, weekEnd: windowEnd, summaryText }
+    });
 
-  res.json({ insight, generated: true });
+    res.json({ insight, generated: true });
+  } catch (err) {
+    console.error("Weekly insight generation failed:", err);
+    res.json({ insight: latest || null, generated: false });
+  }
 });
 
 // Journal-specific stats, distinct from the app-wide task Stats tab.
