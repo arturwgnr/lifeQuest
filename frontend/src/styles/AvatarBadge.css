@@ -22,7 +22,7 @@
   flex-shrink: 0;
 }
 
-.avatar-badge--apprentice {
+.avatar-badge--initiate {
   --av-bg-1: #eaf6fe;
   --av-bg-2: #b9e0f7;
   --av-body: #73869d;
@@ -34,7 +34,7 @@
   --av-ring-2: #0284c7;
 }
 
-.avatar-badge--initiate {
+.avatar-badge--pathfinder {
   --av-bg-1: #e8f8f0;
   --av-bg-2: #aee3cb;
   --av-body: #627589;
@@ -46,7 +46,7 @@
   --av-ring-2: #059669;
 }
 
-.avatar-badge--pathfinder {
+.avatar-badge--vanguard {
   --av-bg-1: #eceefe;
   --av-bg-2: #bfc6f7;
   --av-body: #53637a;
@@ -58,7 +58,7 @@
   --av-ring-2: #4f46e5;
 }
 
-.avatar-badge--vanguard {
+.avatar-badge--arcanist {
   --av-bg-1: #f2ebfe;
   --av-bg-2: #c4adf4;
   --av-body: #48566d;
@@ -70,7 +70,7 @@
   --av-ring-2: #6d28d9;
 }
 
-.avatar-badge--champion {
+.avatar-badge--ascendant {
   --av-bg-1: #fef6e4;
   --av-bg-2: #f4cf7f;
   --av-body: #3f4b5f;
@@ -94,7 +94,22 @@
   --av-ring-2: #818cf8;
 }
 
+/* Final form: deep violet-to-indigo night with gold, light silhouette */
+.avatar-badge--transcendent {
+  --av-bg-1: #6d28d9;
+  --av-bg-2: #1e1b4b;
+  --av-body: #ddd6fe;
+  --av-head: #ede9fe;
+  --av-hair: #c4b5fd;
+  --av-accent: #f59e0b;
+  --av-accent-2: #fde68a;
+  --av-ring-1: #fde68a;
+  --av-ring-2: #a78bfa;
+  --av-halo: #fcd34d;
+}
+
 .avatar-badge__svg {
+  position: relative;
   width: 100%;
   height: 100%;
   overflow: visible;
@@ -189,7 +204,12 @@
   stroke-width: 0.9;
 }
 
-.avatar-badge--sovereign .avatar-badge__gem {
+.avatar-badge__halo-stop {
+  stop-color: var(--av-halo, #fde68a);
+}
+
+.avatar-badge--sovereign .avatar-badge__gem,
+.avatar-badge--transcendent .avatar-badge__gem {
   fill: #f43f5e;
   stroke: #fde68a;
 }
@@ -247,10 +267,93 @@
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.15);
 }
 
-.avatar-badge--sovereign .avatar-badge__level {
+.avatar-badge--sovereign .avatar-badge__level,
+.avatar-badge--transcendent .avatar-badge__level {
   color: #fde68a;
   background: #1e1b4b;
   border-color: rgba(252, 211, 77, 0.55);
+}
+
+/* ---------- Transcendent: aura + third eye ---------- */
+
+/* Two soft layers behind the SVG, drawn past the avatar bounds. Amber and
+   indigo from the existing accent palette, low opacity, never neon. */
+.avatar-badge__aura {
+  position: absolute;
+  inset: -22%;
+  pointer-events: none;
+}
+
+.avatar-badge__aura span {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+}
+
+.avatar-badge__aura span:first-child {
+  background: radial-gradient(circle, rgba(245, 158, 11, 0.38) 38%, rgba(245, 158, 11, 0.12) 56%, transparent 70%);
+  animation: avatarAuraPulse 4.8s ease-in-out infinite;
+}
+
+.avatar-badge__aura span:last-child {
+  inset: 8%;
+  background: radial-gradient(circle, rgba(129, 140, 248, 0.32) 45%, rgba(139, 92, 246, 0.12) 60%, transparent 72%);
+  animation: avatarAuraPulse 4.8s ease-in-out -2.4s infinite;
+}
+
+@keyframes avatarAuraPulse {
+  0%,
+  100% {
+    opacity: 0.75;
+    transform: scale(0.97);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.03);
+  }
+}
+
+.avatar-badge__eye-white {
+  fill: #fffbeb;
+  stroke: #b45309;
+  stroke-width: 0.7;
+}
+
+.avatar-badge__eye-iris {
+  fill: #f59e0b;
+}
+
+.avatar-badge__eye-pupil {
+  fill: #1e1b4b;
+}
+
+.avatar-badge__eye-glow {
+  animation: avatarEyeGlow 4.8s ease-in-out infinite;
+}
+
+@keyframes avatarEyeGlow {
+  0%,
+  100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Small sizes (sidebar, chat): one still glow layer, no pulse, no starfield */
+.avatar-badge--compact .avatar-badge__aura {
+  inset: -14%;
+}
+
+.avatar-badge--compact .avatar-badge__aura span:last-child {
+  display: none;
+}
+
+.avatar-badge--compact .avatar-badge__aura span:first-child,
+.avatar-badge--compact .avatar-badge__eye-glow {
+  animation: none;
+  opacity: 0.85;
 }
 
 /* Teaser for a stage not reached yet: recognisable shape, muted color */
@@ -258,12 +361,21 @@
   filter: grayscale(0.85) opacity(0.55);
 }
 
-.avatar-badge--locked .avatar-badge__starfield {
+.avatar-badge--locked .avatar-badge__starfield,
+.avatar-badge--locked .avatar-badge__aura span,
+.avatar-badge--locked .avatar-badge__eye-glow {
   animation: none;
 }
 
+.avatar-badge--locked .avatar-badge__aura {
+  opacity: 0.35;
+  filter: grayscale(0.85);
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .avatar-badge__starfield {
+  .avatar-badge__starfield,
+  .avatar-badge__aura span,
+  .avatar-badge__eye-glow {
     animation: none;
   }
 }

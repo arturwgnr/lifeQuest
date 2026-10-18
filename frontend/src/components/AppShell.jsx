@@ -4,15 +4,15 @@ import { Compass, LayoutGrid, Sparkles, LogOut, UserCircle, BarChart3, Menu, X, 
 import { useAuth } from "../context/AuthContext.jsx";
 import { useTheme } from "../context/ThemeContext.jsx";
 import AvatarBadge from "./AvatarBadge.jsx";
-import { stageForLevel } from "../constants/avatarStages.js";
+import { stageForUser } from "../constants/avatarStages.js";
 import ProfilePictureBadge from "./ProfilePictureBadge.jsx";
 import ThemeToggle from "./ThemeToggle.jsx";
 import "../styles/AppShell.css";
 
 // Sidebar subtitle comes from the same stage table as the avatar itself, so
 // the label and the picture can never disagree.
-function tierLabel(level) {
-  const stage = stageForLevel(level);
+function tierLabel(user) {
+  const stage = stageForUser(user);
   return `${stage.name} · Stage ${stage.stage}`;
 }
 
@@ -52,10 +52,10 @@ export default function AppShell() {
         <div className="app-shell__profile">
           <div className="app-shell__profile-row">
             <ProfilePictureBadge iconKey={user.profileIcon} size={32} />
-            <AvatarBadge level={user.level} xp={user.xp} gender={user.gender} size={44} />
+            <AvatarBadge level={user.level} xp={user.xp} avatarStage={user.avatarStage} gender={user.gender} size={44} />
             <div className="app-shell__profile-text">
               <h2>{user.name}</h2>
-              <p>{tierLabel(user.level)}</p>
+              <p>{tierLabel(user)}</p>
             </div>
           </div>
           <div className="app-shell__xp-track">

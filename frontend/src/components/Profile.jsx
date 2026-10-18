@@ -5,7 +5,7 @@ import { useAuth } from "../context/AuthContext.jsx";
 import { useCategories } from "../context/CategoriesContext.jsx";
 import { useToast, errorToastFor } from "../context/ToastContext.jsx";
 import { PROFILE_ICON_OPTIONS } from "../constants/profileIcons.js";
-import { AVATAR_STAGES, nextStageForLevel, stageForLevel, stageLevelRange } from "../constants/avatarStages.js";
+import { AVATAR_STAGES, MAX_LEVEL, nextStageAfter, stageForUser, stageLevelRange } from "../constants/avatarStages.js";
 import AvatarBadge from "./AvatarBadge.jsx";
 import ProfilePictureBadge from "./ProfilePictureBadge.jsx";
 import CategoryManager from "./CategoryManager.jsx";
@@ -46,9 +46,10 @@ export default function Profile() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const stage = stageForLevel(user.level);
-  const nextStage = nextStageForLevel(user.level);
-  const xpIntoLevel = user.xp % XP_PER_LEVEL;
+  const stage = stageForUser(user);
+  const nextStage = nextStageAfter(stage);
+  const isMaxLevel = user.level >= MAX_LEVEL;
+  const xpIntoLevel = isMaxLevel ? XP_PER_LEVEL : user.xp % XP_PER_LEVEL;
   const levelsToNextStage = nextStage ? nextStage.minLevel - user.level : 0;
   const xpToNextStage = nextStage ? (nextStage.minLevel - 1) * XP_PER_LEVEL - user.xp : 0;
   const isDirty = name.trim() !== user.name || gender !== user.gender;
@@ -99,7 +100,7 @@ export default function Profile() {
       <section className="profile__hero">
         <div className="profile__hero-main">
           <div className="profile__hero-avatar">
-            <AvatarBadge level={user.level} xp={user.xp} gender={user.gender} size={112} />
+            <AvatarBadge level={user.level} xp={user.xp} avatarStage={user.avatarStage} gender={user.gender} size={112} />
           </div>
           <div className="profile__hero-text">
             <div className="profile__identity">
@@ -118,9 +119,7 @@ export default function Profile() {
             <div className="profile__xp">
               <div className="profile__xp-head">
                 <span>Level {user.level}</span>
-                <span>
-                  {xpIntoLevel} / {XP_PER_LEVEL} XP
-                </span>
+                <span>{isMaxLevel ? "Max level" : `${xpIntoLevel} / ${XP_PER_LEVEL} XP`}</span>
               </div>
               <div className="profile__xp-track">
                 <div className="profile__xp-fill" style={{ width: `${xpIntoLevel}%` }} />
@@ -152,9 +151,15 @@ export default function Profile() {
             </>
           ) : (
             <div className="profile__next-max">
-              <Sparkles size={18} />
-              <strong>Final stage reached</strong>
-              <p>{stage.name} is the last evolution. The ring keeps filling with every level.</p>
+              <span className="profile__next-eyebrow">Progression complete</span>
+              <strong>
+                <Sparkles size={16} />
+                {stage.name}, the final form
+              </strong>
+              <p>
+                All {AVATAR_STAGES.length} stages unlocked. The aura and the open third eye are yours. XP keeps counting, but
+                there is nothing left to evolve.
+              </p>
             </div>
           )}
         </div>
@@ -192,7 +197,7 @@ export default function Profile() {
             </span>
           )}
         </div>
-        <p className="profile__card-sub">Seven stages, each one a visible upgrade. Levels only go up, so your avatar never regresses.</p>
+        <p className="profile__card-sub">{AVATAR_STAGES.length} stages from level 1 to {MAX_LEVEL}, each one earned slowly. Your avatar never regresses.</p>
         <ol className="profile__track">
           {AVATAR_STAGES.map(s => {
             const state = s.stage < stage.stage ? "done" : s.stage === stage.stage ? "current" : "locked";
@@ -254,7 +259,7 @@ export default function Profile() {
               </div>
             </fieldset>
             <div className="profile__settings-footer">
-              <AvatarBadge level={user.level} xp={user.xp} gender={gender} size={40} showLevel={false} />
+              <AvatarBadge level={user.level} xp={user.xp} avatarStage={user.avatarStage} gender={gender} size={40} showLevel={false} />
               <button type="submit" className="profile__save-button btn-lift" disabled={isSavingProfile || !isDirty || !name.trim()}>
                 {isSavingProfile ? (
                   <LoadingIndicator size="sm" tone="light" label="Saving..." />

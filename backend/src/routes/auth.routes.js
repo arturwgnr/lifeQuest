@@ -9,6 +9,7 @@ const {
 const { requireAuth } = require("../middleware/requireAuth");
 const { DEFAULT_CATEGORIES } = require("../lib/defaultCategories");
 const { DEFAULT_PILLARS } = require("../lib/defaultPillars");
+const { displayStage } = require("../utils/xp");
 
 const router = express.Router();
 
@@ -20,7 +21,7 @@ function toPublicUser(user) {
     gender: user.gender,
     xp: user.xp,
     level: user.level,
-    avatarStage: user.avatarStage,
+    avatarStage: displayStage(user),
     profileIcon: user.profileIcon
   };
 }

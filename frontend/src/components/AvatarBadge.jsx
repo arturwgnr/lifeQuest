@@ -1,5 +1,5 @@
 import { useId } from "react";
-import { AVATAR_STAGES, stageForLevel } from "../constants/avatarStages.js";
+import { AVATAR_STAGES, stageForUser } from "../constants/avatarStages.js";
 import "../styles/AvatarBadge.css";
 
 const RING_RADIUS = 45.5;
@@ -12,18 +12,26 @@ const BODY_SCALE = { MASCULINE: 1.14, FEMININE: 0.9, NEUTRAL: 1 };
 const MARK_ANGLES = [45, 135, 225, 315];
 const STAR_ANGLES = [0, 90, 180, 270];
 
+// Below this rendered size the aura drops its layers/pulse and the starfield
+// is hidden, so the final form stays a clean glow instead of visual noise.
+const COMPACT_SIZE = 40;
+
 function polar(angleDeg, radius) {
   const rad = ((angleDeg - 90) * Math.PI) / 180;
   return [50 + radius * Math.cos(rad), 50 + radius * Math.sin(rad)];
 }
 
 // One SVG used everywhere the avatar appears (sidebar, Profile, Oracle,
-// Register preview), so it renders identically in every place. Colors are
-// fixed per stage, not theme tokens, so it is the same illustration in light
-// and dark mode too. `stage` overrides the level-derived stage (previews).
+// auth pages, landing), so it renders identically in every place. Colors are
+// fixed per stage, not theme tokens, so it reads the same in light and dark.
+//
+// Stage resolution: `stage` forces a specific stage (previews/teasers);
+// otherwise it comes from level plus the stored `avatarStage` high-water
+// mark, via the same helper the rest of the app uses.
 export default function AvatarBadge({
   level = 1,
   xp = 0,
+  avatarStage,
   size = 56,
   gender = "NEUTRAL",
   stage: stageOverride,
@@ -32,8 +40,9 @@ export default function AvatarBadge({
   showProgress = true
 }) {
   const uid = useId().replace(/:/g, "");
-  const stage = stageOverride ? AVATAR_STAGES[stageOverride - 1] : stageForLevel(level);
+  const stage = stageOverride ? AVATAR_STAGES[stageOverride - 1] : stageForUser({ level, avatarStage });
   const n = stage.stage;
+  const isCompact = size < COMPACT_SIZE;
   const bodyScale = BODY_SCALE[gender] || 1;
   const progress = showProgress && !locked ? ((xp % 100) / 100) * RING_CIRCUMFERENCE : 0;
 
@@ -41,14 +50,33 @@ export default function AvatarBadge({
   const bgId = `av-bg-${uid}`;
   const haloId = `av-halo-${uid}`;
   const ringId = `av-ring-${uid}`;
+  const eyeGlowId = `av-eye-${uid}`;
+
+  const classes = [
+    "avatar-badge",
+    `avatar-badge--${stage.key}`,
+    isCompact && "avatar-badge--compact",
+    locked && "avatar-badge--locked"
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
     <div
-      className={`avatar-badge avatar-badge--${stage.key}${locked ? " avatar-badge--locked" : ""}`}
+      className={classes}
       style={{ width: size, height: size }}
       role="img"
       aria-label={locked ? `${stage.name} stage (locked)` : `${stage.name} avatar, level ${level}`}
     >
+      {/* Final form: layered aura lives outside the SVG so it can glow
+          beyond the avatar's bounds at any size */}
+      {n >= 8 && (
+        <span className="avatar-badge__aura" aria-hidden="true">
+          <span />
+          <span />
+        </span>
+      )}
+
       <svg viewBox="0 0 100 100" className="avatar-badge__svg" aria-hidden="true">
         <defs>
           <clipPath id={clipId}>
@@ -59,7 +87,11 @@ export default function AvatarBadge({
             <stop offset="100%" className="avatar-badge__bg-stop-2" />
           </radialGradient>
           <radialGradient id={haloId}>
-            <stop offset="0%" stopColor="#fde68a" stopOpacity="0.95" />
+            <stop offset="0%" className="avatar-badge__halo-stop" stopOpacity="0.95" />
+            <stop offset="100%" className="avatar-badge__halo-stop" stopOpacity="0" />
+          </radialGradient>
+          <radialGradient id={eyeGlowId}>
+            <stop offset="0%" stopColor="#fde68a" stopOpacity="0.9" />
             <stop offset="100%" stopColor="#fde68a" stopOpacity="0" />
           </radialGradient>
           <linearGradient id={ringId} x1="0" y1="0" x2="1" y2="1">
@@ -68,8 +100,8 @@ export default function AvatarBadge({
           </linearGradient>
         </defs>
 
-        {/* Stage 7: slow starlit outer ring */}
-        {n >= 7 && (
+        {/* Stage 7+: slow starlit outer ring (hidden when compact) */}
+        {n >= 7 && !isCompact && (
           <g className="avatar-badge__starfield">
             <circle cx="50" cy="50" r="49" className="avatar-badge__aura-ring" />
             {STAR_ANGLES.map(angle => {
@@ -170,6 +202,16 @@ export default function AvatarBadge({
             <g>
               <path d="M37.5 32 L39.5 20.5 L45 26.5 L50 17 L55 26.5 L60.5 20.5 L62.5 32 Z" className="avatar-badge__crown" />
               {n >= 7 && <circle cx="50" cy="27" r="2.1" className="avatar-badge__gem" />}
+            </g>
+          )}
+
+          {/* Stage 8 only: the third eye, fully open, with a soft glow */}
+          {n >= 8 && (
+            <g className="avatar-badge__third-eye">
+              <circle cx="50" cy="37" r="6" fill={`url(#${eyeGlowId})`} className="avatar-badge__eye-glow" />
+              <path d="M44.2 37 Q50 32.4 55.8 37 Q50 41.6 44.2 37 Z" className="avatar-badge__eye-white" />
+              <circle cx="50" cy="37" r="1.9" className="avatar-badge__eye-iris" />
+              <circle cx="50" cy="37" r="0.75" className="avatar-badge__eye-pupil" />
             </g>
           )}
         </g>

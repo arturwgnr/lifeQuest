@@ -239,8 +239,15 @@
 }
 
 .profile__next-max strong {
-  font-size: 0.9375rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 1rem;
   color: var(--slate-900);
+}
+
+.profile__next-max strong svg {
+  color: var(--amber-500);
 }
 
 .profile__next-max p {
@@ -362,7 +369,7 @@
   margin: 0;
   padding: 0.25rem 0 0.15rem;
   display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-template-columns: repeat(8, minmax(0, 1fr));
   gap: 0.5rem;
   position: relative;
 }

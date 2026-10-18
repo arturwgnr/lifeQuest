@@ -45,8 +45,8 @@ export default function AuthLayout({ children }) {
         </div>
 
         <div className="auth-aside__progression">
-          {[1, 3, 5, 7].map(stage => (
-            <AvatarBadge key={stage} stage={stage} level={1} size={stage === 7 ? 46 : 38} showLevel={false} showProgress={false} />
+          {[1, 3, 5, 8].map(stage => (
+            <AvatarBadge key={stage} stage={stage} level={1} size={stage === 8 ? 46 : 38} showLevel={false} showProgress={false} />
           ))}
           <span>Your avatar evolves as you finish real work.</span>
         </div>
