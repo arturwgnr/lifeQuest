@@ -1,23 +1,19 @@
 import { useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
-import { Compass, LayoutGrid, Sparkles, LogOut, UserCircle, BookHeart, BarChart3, Menu, X, Route, CalendarCheck } from "lucide-react";
+import { Compass, LayoutGrid, Sparkles, LogOut, UserCircle, BarChart3, Menu, X, Route, CalendarCheck } from "lucide-react";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useTheme } from "../context/ThemeContext.jsx";
 import AvatarBadge from "./AvatarBadge.jsx";
+import { stageForLevel } from "../constants/avatarStages.js";
 import ProfilePictureBadge from "./ProfilePictureBadge.jsx";
 import ThemeToggle from "./ThemeToggle.jsx";
 import "../styles/AppShell.css";
 
-const TIER_LABELS = [
-  { min: 9, label: "Sovereign Tier" },
-  { min: 7, label: "Champion Class" },
-  { min: 5, label: "Pathfinder Class" },
-  { min: 3, label: "Initiate Class" },
-  { min: 0, label: "Novice Chronicle" }
-];
-
+// Sidebar subtitle comes from the same stage table as the avatar itself, so
+// the label and the picture can never disagree.
 function tierLabel(level) {
-  return TIER_LABELS.find(t => level >= t.min).label;
+  const stage = stageForLevel(level);
+  return `${stage.name} · Stage ${stage.stage}`;
 }
 
 export default function AppShell() {
@@ -56,7 +52,7 @@ export default function AppShell() {
         <div className="app-shell__profile">
           <div className="app-shell__profile-row">
             <ProfilePictureBadge iconKey={user.profileIcon} size={32} />
-            <AvatarBadge level={user.level} xp={user.xp} size={44} />
+            <AvatarBadge level={user.level} xp={user.xp} gender={user.gender} size={44} />
             <div className="app-shell__profile-text">
               <h2>{user.name}</h2>
               <p>{tierLabel(user.level)}</p>
@@ -76,6 +72,17 @@ export default function AppShell() {
             <LayoutGrid size={16} />
             Dashboard
           </NavLink>
+          <NavLink
+            to="/app/oracle"
+            onClick={closeDrawer}
+            className={({ isActive }) => `app-shell__nav-link app-shell__nav-link--oracle${isActive ? " app-shell__nav-link--active" : ""}`}
+          >
+            <span className="app-shell__oracle-icon">
+              <Sparkles size={13} />
+            </span>
+            The Oracle
+            <span className="app-shell__oracle-tag">AI</span>
+          </NavLink>
           <NavLink to="/app/planning" onClick={closeDrawer} className={({ isActive }) => `app-shell__nav-link${isActive ? " app-shell__nav-link--active" : ""}`}>
             <Route size={16} />
             Planning Mode
@@ -83,15 +90,6 @@ export default function AppShell() {
           <NavLink to="/app/pillars" onClick={closeDrawer} className={({ isActive }) => `app-shell__nav-link${isActive ? " app-shell__nav-link--active" : ""}`}>
             <CalendarCheck size={16} />
             Pillars Mode
-          </NavLink>
-          <NavLink to="/app/oracle" onClick={closeDrawer} className={({ isActive }) => `app-shell__nav-link${isActive ? " app-shell__nav-link--active" : ""}`}>
-            <Sparkles size={16} />
-            The Oracle
-            <span className="app-shell__nav-dot" />
-          </NavLink>
-          <NavLink to="/app/journal" onClick={closeDrawer} className={({ isActive }) => `app-shell__nav-link${isActive ? " app-shell__nav-link--active" : ""}`}>
-            <BookHeart size={16} />
-            Journal
           </NavLink>
           <NavLink to="/app/stats" onClick={closeDrawer} className={({ isActive }) => `app-shell__nav-link${isActive ? " app-shell__nav-link--active" : ""}`}>
             <BarChart3 size={16} />

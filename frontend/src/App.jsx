@@ -9,17 +9,16 @@ import AppShell from "./components/AppShell.jsx";
 import Dashboard from "./components/Dashboard.jsx";
 import OracleScreen from "./components/OracleScreen.jsx";
 import Profile from "./components/Profile.jsx";
-import Journal from "./components/Journal.jsx";
-import JournalStats from "./components/JournalStats.jsx";
 import Stats from "./components/Stats.jsx";
 import Planning from "./components/Planning.jsx";
 import Pillars from "./components/Pillars.jsx";
 import EditPillars from "./components/EditPillars.jsx";
+import LoadingIndicator from "./components/LoadingIndicator.jsx";
 
 function FullScreenLoader() {
   return (
-    <div style={{ height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--slate-400)" }}>
-      Loading lifeQuest...
+    <div style={{ height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--slate-50)" }}>
+      <LoadingIndicator variant="panel" size="lg" label="Loading lifeQuest..." />
     </div>
   );
 }
@@ -80,8 +79,9 @@ export default function App() {
         <Route path="pillars/edit" element={<EditPillars />} />
         <Route path="oracle" element={<OracleScreen />} />
         <Route path="profile" element={<Profile />} />
-        <Route path="journal" element={<Journal />} />
-        <Route path="journal/stats" element={<JournalStats />} />
+        {/* Journal is switched off: components, API routes and saved entries are
+            kept so it can be re-enabled, but its URLs bounce to the Dashboard. */}
+        <Route path="journal/*" element={<Navigate to="/app" replace />} />
         <Route path="stats" element={<Stats />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

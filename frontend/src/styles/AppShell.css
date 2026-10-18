@@ -44,9 +44,6 @@
   margin-left: 0.25rem;
 }
 
-.app-shell__sidebar-close:hover {
-  color: white;
-}
 
 .app-shell__drawer-backdrop {
   position: fixed;
@@ -170,27 +167,67 @@
   color: var(--ink-text-muted);
   text-decoration: none;
   position: relative;
-  transition: all 0.15s ease;
 }
 
-.app-shell__nav-link:hover {
-  background: rgba(30, 41, 59, 0.4);
-  color: white;
+.app-shell__nav-link svg {
+  transition: color var(--dur-fast) ease;
 }
 
 .app-shell__nav-link--active {
   background: var(--ink-elevated);
   color: white;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
-.app-shell__nav-dot {
+.app-shell__nav-link--active::before {
+  content: "";
   position: absolute;
-  right: 0.75rem;
-  width: 0.35rem;
-  height: 0.35rem;
-  border-radius: 999px;
+  left: -1rem;
+  top: 0.5rem;
+  bottom: 0.5rem;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
   background: var(--amber-500);
-  animation: pulse 2s ease-in-out infinite;
+}
+
+.app-shell__nav-link--active > svg {
+  color: var(--amber-500);
+}
+
+/* The Oracle gets its own small gradient tile + AI tag so the assistant
+   reads as a distinct capability, not one more list item. */
+.app-shell__oracle-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin: -0.1rem -0.1rem -0.1rem -0.15rem;
+  border-radius: 0.4rem;
+  color: white;
+  background: linear-gradient(135deg, var(--indigo-500), var(--violet-500));
+  box-shadow: 0 2px 8px -2px rgba(124, 58, 237, 0.7);
+}
+
+.app-shell__oracle-tag {
+  margin-left: auto;
+  padding: 0.05rem 0.4rem;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #c4b5fd;
+  background: rgba(139, 92, 246, 0.14);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  border-radius: 999px;
+}
+
+.app-shell__nav-link--oracle.app-shell__nav-link--active {
+  background: linear-gradient(90deg, rgba(99, 102, 241, 0.22), rgba(139, 92, 246, 0.08));
+}
+
+.app-shell__nav-link--oracle.app-shell__nav-link--active::before {
+  background: linear-gradient(180deg, var(--indigo-400), var(--violet-500));
 }
 
 .app-shell__nav-footer {
@@ -213,10 +250,6 @@
   border-radius: var(--radius-md);
 }
 
-.app-shell__logout:hover {
-  background: rgba(190, 18, 60, 0.1);
-  color: var(--rose-500);
-}
 
 .app-shell__mobile-header {
   display: flex;
@@ -272,6 +305,32 @@
   border: none;
   color: var(--ink-text-muted);
   padding: 0.4rem;
+}
+
+@media (hover: hover) {
+  .app-shell__sidebar-close:hover,
+  .app-shell__hamburger:hover {
+    color: var(--amber-500);
+  }
+
+  .app-shell__nav-link:not(.app-shell__nav-link--active):hover {
+    background: rgba(30, 41, 59, 0.55);
+    color: white;
+  }
+
+  .app-shell__nav-link:not(.app-shell__nav-link--active):hover > svg {
+    color: var(--amber-500);
+  }
+
+  .app-shell__nav-link--oracle:not(.app-shell__nav-link--active):hover .app-shell__oracle-icon {
+    box-shadow: 0 2px 12px -1px rgba(124, 58, 237, 0.9);
+  }
+
+  /* Destructive-ish: only the icon/text go red, the row stays quiet */
+  .app-shell__logout:hover,
+  .app-shell__mobile-logout:hover {
+    color: #fb7185;
+  }
 }
 
 .app-shell__main {
