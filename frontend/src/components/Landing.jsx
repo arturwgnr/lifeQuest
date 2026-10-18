@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import TypewriterWord from "./TypewriterWord";
 import {
@@ -19,8 +19,103 @@ import {
   Award,
   LogIn,
   UserPlus,
+  Route,
+  CalendarCheck,
+  Tags,
+  History,
+  Siren,
+  Smartphone,
+  MoonStar,
+  Layers,
 } from "lucide-react";
+import BrandMark from "./BrandMark.jsx";
+import {
+  AvatarEvolution,
+  ChainMock,
+  DashboardMock,
+  OracleMock,
+  PillarsMock,
+  PlanningMock,
+  StatsMock,
+} from "./LandingMockups.jsx";
 import "../styles/Landing.css";
+
+// Factual, verifiable product facts only: no user counts, logos or quotes.
+const PRODUCT_FACTS = [
+  { icon: Tags, label: "Custom categories" },
+  { icon: GitPullRequest, label: "Quest chains" },
+  { icon: History, label: "Full status history" },
+  { icon: Siren, label: "Procrastination flags" },
+  { icon: CalendarCheck, label: "Daily pillars" },
+  { icon: Layers, label: "8-stage avatar" },
+  { icon: MoonStar, label: "Light & dark mode" },
+  { icon: Smartphone, label: "Mobile-ready" },
+];
+
+const SHOWCASE = [
+  {
+    key: "oracle",
+    icon: Sparkles,
+    title: "The Oracle",
+    copy: "Narrate your day. It proposes structured quests, asks when something is ambiguous, and files nothing until you approve.",
+    Mock: OracleMock,
+  },
+  {
+    key: "chains",
+    icon: GitPullRequest,
+    title: "Quest chains",
+    copy: "Main quests with dependent steps, and the whole chain's progress at a glance.",
+    Mock: ChainMock,
+  },
+  {
+    key: "planning",
+    icon: Route,
+    title: "Planning Mode",
+    copy: "Drag quests into the order you will actually work through them.",
+    Mock: PlanningMock,
+  },
+  {
+    key: "pillars",
+    icon: CalendarCheck,
+    title: "Pillars",
+    copy: "Daily habits scored by percentage, from red through yellow to green.",
+    Mock: PillarsMock,
+  },
+  {
+    key: "stats",
+    icon: BarChart3,
+    title: "Stats",
+    copy: "Consistency, completion and where quests get stuck, from real status history.",
+    Mock: StatsMock,
+  },
+];
+
+// Adds .is-visible to [data-reveal] elements as they scroll into view. The
+// hidden starting state only applies once the observer is ready (the root
+// gets landing--reveal), so content never stays invisible without JS.
+function useScrollReveal(rootRef) {
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root || typeof IntersectionObserver === "undefined") return undefined;
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return undefined;
+
+    const targets = root.querySelectorAll("[data-reveal]");
+    const observer = new IntersectionObserver(
+      entries => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("is-visible");
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { rootMargin: "0px 0px -8% 0px", threshold: 0.12 }
+    );
+    root.classList.add("landing--reveal");
+    targets.forEach(t => observer.observe(t));
+    return () => observer.disconnect();
+  }, [rootRef]);
+}
 
 const FEATURES = [
   {
@@ -98,17 +193,16 @@ const STEP_PREVIEWS = [
 export default function Landing() {
   const [activeStep, setActiveStep] = useState(1);
   const preview = STEP_PREVIEWS[activeStep - 1];
+  const rootRef = useRef(null);
+  useScrollReveal(rootRef);
 
   return (
-    <div className="landing">
+    <div className="landing" ref={rootRef}>
       <div className="top-bar">
         <header className="landing__nav">
-          <div className="landing__brand">
-            <span className="landing__brand-icon">
-              <Compass size={18} />
-            </span>
-            <span className="landing__brand-name">lifeQuest</span>
-          </div>
+          <a href="#top" className="landing__brand" aria-label="lifeQuest home">
+            <BrandMark size={32} withName />
+          </a>
           <div className="landing__nav-actions">
             <Link to="/login" className="landing__nav-cta">
               Sign In
@@ -121,7 +215,7 @@ export default function Landing() {
         </header>
       </div>
 
-      <section className="landing__block landing__block--hero">
+      <section className="landing__block landing__block--hero" id="top">
         <div className="landing__inner landing__hero">
           <div className="landing__hero-copy">
             <span className="landing__eyebrow">
@@ -156,26 +250,22 @@ export default function Landing() {
 
           <div className="landing__hero-visual" aria-hidden="true">
             <div className="landing__hero-aura" />
-            <div className="landing__hero-card landing__hero-card--float">
-              <div className="landing__hero-card-row">
-                <span className="landing__hero-dot" />
-                Needs Attention Today
-              </div>
-              <p className="landing__hero-card-title">Reply important Email</p>
-              <div className="landing__hero-progress-track">
-                <div className="landing__hero-progress-fill" />
-              </div>
-            </div>
-            <div className="landing__hero-card landing__hero-card--secondary">
-              <div className="landing__hero-card-row landing__hero-card-row--muted">
-                <GitPullRequest size={12} />
-                Chain 2 / 3 complete
-              </div>
-              <p className="landing__hero-card-title landing__hero-card-title--small">
-                Book doctor's appointment
-              </p>
-            </div>
+            <DashboardMock />
           </div>
+        </div>
+      </section>
+
+      <section className="landing__facts" aria-label="What's inside">
+        <div className="landing__inner">
+          <span className="landing__facts-label">Built like a real product</span>
+          <ul className="landing__facts-list">
+            {PRODUCT_FACTS.map(({ icon: Icon, label }) => (
+              <li key={label}>
+                <Icon size={15} />
+                {label}
+              </li>
+            ))}
+          </ul>
         </div>
       </section>
 
@@ -184,13 +274,13 @@ export default function Landing() {
         id="how-it-works"
       >
         <div className="landing__inner">
-          <h2 className="landing__section-title">How it works</h2>
-          <p className="landing__section-subtitle">
+          <h2 className="landing__section-title" data-reveal>How it works</h2>
+          <p className="landing__section-subtitle" data-reveal>
             The same three steps, every day, no loot, no timers, no artificial
             urgency.
           </p>
 
-          <div className="landing__steps">
+          <div className="landing__steps" data-reveal>
             <div className="landing__steps-list">
               {STEPS.map((step, idx) => {
                 const num = idx + 1;
@@ -283,7 +373,6 @@ export default function Landing() {
                           />
                         ) : (
                           <Circle
-                            style={{ color: "white" }}
                             size={15}
                             className="landing__preview-task-icon"
                           />
@@ -307,10 +396,10 @@ export default function Landing() {
 
       <section className="landing__block landing__block--dark" id="features">
         <div className="landing__inner">
-          <h2 className="landing__section-title landing__section-title--on-dark">
+          <h2 className="landing__section-title landing__section-title--on-dark" data-reveal>
             Built to catch what a checklist can't
           </h2>
-          <p className="landing__section-subtitle landing__section-subtitle--on-dark">
+          <p className="landing__section-subtitle landing__section-subtitle--on-dark" data-reveal>
             A checklist tells you what's left. It doesn't tell you what you're
             stuck on, or why. This does.
           </p>
@@ -320,6 +409,7 @@ export default function Landing() {
               <div
                 className="landing__feature-card landing__feature-card--on-dark"
                 key={f.title}
+                data-reveal
               >
                 <div className="landing__feature-icon">
                   <f.icon size={20} />
@@ -329,6 +419,54 @@ export default function Landing() {
                 <div className="landing__feature-flourish" />
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="landing__block landing__block--showcase" id="showcase">
+        <div className="landing__inner">
+          <span className="landing__kicker" data-reveal>
+            The whole app
+          </span>
+          <h2 className="landing__section-title" data-reveal>
+            Everything you need to follow through
+          </h2>
+          <p className="landing__section-subtitle" data-reveal>
+            Real screens from lifeQuest, not illustrations. One quest log, five
+            ways to see it.
+          </p>
+
+          <div className="landing__bento">
+            {SHOWCASE.map(({ key, icon: Icon, title, copy, Mock }) => (
+              <article key={key} className={`landing__bento-card landing__bento-card--${key}`} data-reveal>
+                <div className="landing__bento-text">
+                  <span className="landing__bento-icon">
+                    <Icon size={16} />
+                  </span>
+                  <h3>{title}</h3>
+                  <p>{copy}</p>
+                </div>
+                <div className="landing__bento-visual">
+                  <Mock />
+                </div>
+              </article>
+            ))}
+
+            <article className="landing__bento-card landing__bento-card--avatar" data-reveal>
+              <div className="landing__bento-text">
+                <span className="landing__bento-icon">
+                  <Award size={16} />
+                </span>
+                <h3>Profile &amp; avatar evolution</h3>
+                <p>
+                  Eight stages from Wanderer to Transcendent, earned slowly up to
+                  level 100. Purely cosmetic: XP never unlocks anything.
+                </p>
+              </div>
+              <div className="landing__bento-visual landing__bento-visual--avatar">
+                <AvatarEvolution />
+              </div>
+            </article>
           </div>
         </div>
       </section>
@@ -386,6 +524,10 @@ export default function Landing() {
                 alt=""
                 className="landing__signin-mascot"
                 aria-hidden="true"
+                loading="lazy"
+                decoding="async"
+                width="510"
+                height="490"
               />
             </div>
           </div>
@@ -397,10 +539,7 @@ export default function Landing() {
           <div className="landing__footer-top">
             <div className="landing__footer-brand">
               <div className="landing__brand">
-                <span className="landing__brand-icon">
-                  <Compass size={16} />
-                </span>
-                <span className="landing__brand-name">lifeQuest</span>
+                <BrandMark size={28} withName />
               </div>
               <p>
                 A personal quest tracker for real accountability, with a light
@@ -417,6 +556,9 @@ export default function Landing() {
                   </li>
                   <li>
                     <a href="#features">Features</a>
+                  </li>
+                  <li>
+                    <a href="#showcase">Showcase</a>
                   </li>
                   <li>
                     <a href="#sign-in">Sign In</a>
