@@ -28,7 +28,8 @@ export const api = {
     login: body => request("/auth/login", { method: "POST", body: JSON.stringify(body) }),
     logout: () => request("/auth/logout", { method: "POST" }),
     me: () => request("/auth/me"),
-    updateProfile: body => request("/auth/me", { method: "PATCH", body: JSON.stringify(body) })
+    updateProfile: body => request("/auth/me", { method: "PATCH", body: JSON.stringify(body) }),
+    deleteAccount: body => request("/auth/me", { method: "DELETE", body: JSON.stringify(body) })
   },
   tasks: {
     list: () => request("/tasks"),

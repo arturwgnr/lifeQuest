@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Plus, Pencil, Trash2, Check, X } from "lucide-react";
 import { useCategories } from "../context/CategoriesContext.jsx";
+import { useToast, errorToastFor } from "../context/ToastContext.jsx";
 import { ICON_OPTIONS, getIconComponent } from "../constants/icons.js";
 import { TONE_OPTIONS } from "../constants/tones.js";
 import "../styles/CategoryManager.css";
@@ -14,6 +15,7 @@ function IconIn({ icon }) {
 
 export default function CategoryManager() {
   const { categories, createCategory, updateCategory, deleteCategory } = useCategories();
+  const toast = useToast();
 
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -47,10 +49,14 @@ export default function CategoryManager() {
     try {
       if (editingId) {
         await updateCategory(editingId, draft);
+        toast.success("Category updated", { description: draft.name.trim() });
       } else {
         await createCategory(draft);
+        toast.success(`Category created: ${draft.name.trim()}`);
       }
       cancelForm();
+    } catch (err) {
+      errorToastFor(toast, err, "Category couldn't be saved");
     } finally {
       setIsSaving(false);
     }
@@ -65,8 +71,10 @@ export default function CategoryManager() {
   const confirmDelete = async () => {
     setDeleteError("");
     try {
+      const deleted = categories.find(c => c.id === pendingDeleteId);
       await deleteCategory(pendingDeleteId, reassignToId || undefined);
       setPendingDeleteId(null);
+      toast.info("Category deleted", { description: deleted?.name });
     } catch (err) {
       if (err.status === 409) {
         setDeleteError(

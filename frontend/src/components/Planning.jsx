@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { DndContext, MouseSensor, TouchSensor, closestCenter, useSensor, useSensors } from "@dnd-kit/core";
 import { SortableContext, rectSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -6,8 +6,10 @@ import { Route, GripVertical, ChevronUp, ChevronDown, Eye } from "lucide-react";
 import { api } from "../api/client.js";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useCategories } from "../context/CategoriesContext.jsx";
+import { useToast, errorToastFor } from "../context/ToastContext.jsx";
 import { STATUSES, STATUS_LABELS, STATUS_VISUAL, PRIORITY_LABELS } from "../constants/status.js";
 import { playTaskCompleted, playTaskBlocked } from "../utils/soundEffects.js";
+import { notifyStatusChange, withStatus } from "../utils/taskFeedback.js";
 import TaskDetailModal from "./TaskDetailModal.jsx";
 import LevelUpNotification from "./LevelUpNotification.jsx";
 import LoadingIndicator from "./LoadingIndicator.jsx";
@@ -23,6 +25,13 @@ function planningComparator(a, b) {
   if (aHas && bHas) return a.planningOrder - b.planningOrder;
   if (aHas !== bHas) return aHas ? -1 : 1;
   return new Date(b.createdAt) - new Date(a.createdAt);
+}
+
+// Writes a sequence's positions into planningOrder locally, so the new order
+// renders immediately (optimistic) while the save runs in the background.
+function applyOrder(tasks, orderedIds) {
+  const position = new Map(orderedIds.map((id, index) => [id, index]));
+  return tasks.map(t => (position.has(t.id) ? { ...t, planningOrder: position.get(t.id) } : t));
 }
 
 function PlanningCard({ task, index, total, onStatusChange, onMove, onSelect, isDropTarget, justReordered }) {
@@ -111,6 +120,7 @@ function PlanningCard({ task, index, total, onStatusChange, onMove, onSelect, is
 
 export default function Planning() {
   const { refresh } = useAuth();
+  const toast = useToast();
   const [tasks, setTasks] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showCompleted, setShowCompleted] = useState(false);
@@ -121,6 +131,13 @@ export default function Planning() {
   const [overId, setOverId] = useState(null);
   const [justReorderedIds, setJustReorderedIds] = useState(new Set());
 
+  // Latest list for callbacks that outlive a render (toast Undo actions)
+  const tasksRef = useRef(tasks);
+  tasksRef.current = tasks;
+  // Saves are serialized by a counter so a slow earlier response can't
+  // overwrite the order from a newer move.
+  const saveSeqRef = useRef(0);
+
   const loadTasks = async () => {
     const { tasks: loaded } = await api.tasks.list();
     setTasks(loaded);
@@ -129,9 +146,15 @@ export default function Planning() {
   useEffect(() => {
     (async () => {
       setIsLoading(true);
-      await loadTasks();
-      setIsLoading(false);
+      try {
+        await loadTasks();
+      } catch (err) {
+        errorToastFor(toast, err, "Couldn't load your roadmap");
+      } finally {
+        setIsLoading(false);
+      }
     })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Done quests sink to the end of the sequence (same "auto-move" behavior as the
@@ -146,15 +169,36 @@ export default function Planning() {
     });
   }, [tasks, showCompleted]);
 
-  const persistOrder = async orderedIds => {
+  // Optimistic reorder: the list is re-sorted locally first and stays
+  // rendered while the save runs (overlay pill only, never an empty view).
+  // On failure the previous order is restored and an error toast explains it.
+  const persistOrder = async (orderedIds, { isUndo = false } = {}) => {
+    const snapshot = tasksRef.current;
+    const previousIds = sequence.map(t => t.id);
+    const seq = ++saveSeqRef.current;
+
+    setTasks(prev => applyOrder(prev, orderedIds));
+    setJustReorderedIds(new Set(orderedIds));
+    setTimeout(() => setJustReorderedIds(new Set()), 900);
     setIsSaving(true);
+
     try {
       const { tasks: updated } = await api.tasks.reorder(orderedIds);
+      if (seq !== saveSeqRef.current) return;
       setTasks(updated);
-      setJustReorderedIds(new Set(orderedIds));
-      setTimeout(() => setJustReorderedIds(new Set()), 900);
+      if (isUndo) {
+        toast.info("Order restored");
+      } else {
+        toast.success("Planning order saved", {
+          action: { label: "Undo", onClick: () => persistOrder(previousIds, { isUndo: true }) }
+        });
+      }
+    } catch (err) {
+      if (seq !== saveSeqRef.current) return;
+      setTasks(snapshot);
+      errorToastFor(toast, err, "Order couldn't be saved, so it was rolled back");
     } finally {
-      setIsSaving(false);
+      if (seq === saveSeqRef.current) setIsSaving(false);
     }
   };
 
@@ -179,13 +223,29 @@ export default function Planning() {
     persistOrder(arrayMove(sequence, index, targetIndex).map(t => t.id));
   };
 
-  const applyStatusChange = async (taskId, status) => {
-    const { leveledUpTo } = await api.tasks.changeStatus(taskId, status);
-    await loadTasks();
-    if (status === "DONE") await refresh();
-    if (leveledUpTo) setLevelUp(leveledUpTo);
-    if (status === "DONE") playTaskCompleted();
-    if (status === "BLOCKED") playTaskBlocked();
+  const applyStatusChange = async (taskId, status, { silent = false } = {}) => {
+    const task = tasksRef.current.find(t => t.id === taskId);
+    if (!task || task.status === status) return;
+    const previousStatus = task.status;
+    setTasks(prev => withStatus(prev, taskId, status));
+    try {
+      const { leveledUpTo } = await api.tasks.changeStatus(taskId, status);
+      await loadTasks();
+      if (status === "DONE") refresh();
+      if (leveledUpTo) setLevelUp(leveledUpTo);
+      if (status === "DONE") playTaskCompleted();
+      if (status === "BLOCKED") playTaskBlocked();
+      if (!silent) {
+        notifyStatusChange(toast, {
+          task,
+          status,
+          onUndo: () => applyStatusChange(taskId, previousStatus, { silent: true })
+        });
+      }
+    } catch (err) {
+      setTasks(prev => withStatus(prev, taskId, previousStatus));
+      errorToastFor(toast, err, "Status change failed");
+    }
   };
 
   // Mouse and touch are handled by separate sensors (rather than one shared
@@ -222,12 +282,6 @@ export default function Planning() {
         </label>
       </div>
 
-      {isSaving && (
-        <span className="planning__saving">
-          <LoadingIndicator variant="inline" size="sm" label="Saving order…" />
-        </span>
-      )}
-
       {sequence.length === 0 ? (
         <div className="planning__empty">
           <p>No open quests to sequence yet. Forge a quest from the Dashboard to start building your roadmap.</p>
@@ -241,7 +295,8 @@ export default function Planning() {
           onDragEnd={handleDragEnd}
         >
           <SortableContext items={sequence.map(t => t.id)} strategy={rectSortingStrategy}>
-            <div className="planning__sequence">
+            <div className={`planning__sequence${isSaving ? " planning__sequence--saving" : ""}`} aria-busy={isSaving}>
+              {isSaving && <LoadingIndicator variant="overlay" size="sm" label="Saving order…" />}
               {sequence.map((task, index) => (
                 <PlanningCard
                   key={task.id}

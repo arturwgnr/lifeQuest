@@ -34,6 +34,9 @@ export default function AddTaskModal({ rootTasks, onClose, onCreate }) {
         xpValue: DEFAULT_XP[priorityType]
       });
       onClose();
+    } catch {
+      // The parent already surfaced the error as a toast; keep the form open
+      // with everything the user typed so they can retry.
     } finally {
       setIsSubmitting(false);
     }
@@ -44,7 +47,7 @@ export default function AddTaskModal({ rootTasks, onClose, onCreate }) {
       <div className="add-task-modal">
         <div className="add-task-modal__header">
           <h3>Forge New Quest</h3>
-          <button type="button" onClick={onClose}>
+          <button type="button" onClick={onClose} aria-label="Close">
             <X size={18} />
           </button>
         </div>
@@ -108,7 +111,7 @@ export default function AddTaskModal({ rootTasks, onClose, onCreate }) {
             <button type="button" className="add-task-modal__cancel" onClick={onClose}>
               Cancel
             </button>
-            <button type="submit" className="add-task-modal__submit" disabled={isSubmitting}>
+            <button type="submit" className="add-task-modal__submit btn-lift" disabled={isSubmitting}>
               {isSubmitting ? "Forging..." : "Confirm Forge"}
             </button>
           </div>

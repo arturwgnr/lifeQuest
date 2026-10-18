@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, Plus, Pencil, Trash2, Check, X, Star, CheckCircle2 } from "lucide-react";
 import { api } from "../api/client.js";
+import { useToast, errorToastFor } from "../context/ToastContext.jsx";
 import LoadingIndicator from "./LoadingIndicator.jsx";
 import "../styles/EditPillars.css";
 
@@ -12,6 +13,7 @@ function draftFromGroup(group) {
 }
 
 export default function EditPillars() {
+  const toast = useToast();
   const [groups, setGroups] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
@@ -30,9 +32,15 @@ export default function EditPillars() {
   useEffect(() => {
     (async () => {
       setIsLoading(true);
-      await loadGroups();
-      setIsLoading(false);
+      try {
+        await loadGroups();
+      } catch (err) {
+        errorToastFor(toast, err, "Couldn't load your pillar groups");
+      } finally {
+        setIsLoading(false);
+      }
     })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const startAdd = () => {
@@ -76,6 +84,9 @@ export default function EditPillars() {
         await api.pillars.groups.create({ name: draft.name, pillars });
       }
       await loadGroups();
+      toast.success(editingId ? "Pillar group updated" : `Pillar group created: ${draft.name.trim()}`, {
+        description: `${pillars.length} pillar${pillars.length === 1 ? "" : "s"}`
+      });
       cancelForm();
     } catch (err) {
       setFormError(err.message);
@@ -92,17 +103,24 @@ export default function EditPillars() {
   const confirmDelete = async () => {
     setDeleteError("");
     try {
+      const deleted = groups.find(g => g.id === pendingDeleteId);
       await api.pillars.groups.remove(pendingDeleteId);
       setPendingDeleteId(null);
       await loadGroups();
+      toast.info("Pillar group deleted", { description: deleted?.name });
     } catch (err) {
       setDeleteError(err.message);
     }
   };
 
   const handleActivate = async groupId => {
-    const { groups: updated } = await api.pillars.groups.activate(groupId);
-    setGroups(updated);
+    try {
+      const { groups: updated } = await api.pillars.groups.activate(groupId);
+      setGroups(updated);
+      toast.success(`Active group: ${updated.find(g => g.id === groupId)?.name || "updated"}`);
+    } catch (err) {
+      errorToastFor(toast, err, "Couldn't switch the active group");
+    }
   };
 
   if (isLoading) {

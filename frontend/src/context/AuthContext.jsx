@@ -7,8 +7,11 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const refresh = useCallback(async () => {
-    setIsLoading(true);
+  // Only the very first session check drives isLoading. Later refreshes (after
+  // completing a quest, to pick up new XP) must stay silent: App swaps the
+  // whole tree for a full-screen loader while isLoading is true, which used to
+  // blank the screen every time a task was marked Done.
+  const loadSession = useCallback(async () => {
     try {
       const { user: me } = await api.auth.me();
       setUser(me);
@@ -19,9 +22,18 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
+  const refresh = useCallback(async () => {
+    try {
+      const { user: me } = await api.auth.me();
+      setUser(me);
+    } catch (err) {
+      if (err.status === 401) setUser(null);
+    }
+  }, []);
+
   useEffect(() => {
-    refresh();
-  }, [refresh]);
+    loadSession();
+  }, [loadSession]);
 
   const register = async body => {
     const { user: created } = await api.auth.register(body);
@@ -40,10 +52,17 @@ export function AuthProvider({ children }) {
     setUser(null);
   };
 
+  // Server deletes everything in one transaction and clears the session
+  // cookie; local state is only dropped once that has succeeded.
+  const deleteAccount = async body => {
+    await api.auth.deleteAccount(body);
+    setUser(null);
+  };
+
   const updateLocalUser = patch => setUser(prev => (prev ? { ...prev, ...patch } : prev));
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, register, login, logout, refresh, updateLocalUser }}>
+    <AuthContext.Provider value={{ user, isLoading, register, login, logout, deleteAccount, refresh, updateLocalUser }}>
       {children}
     </AuthContext.Provider>
   );

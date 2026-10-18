@@ -3,9 +3,11 @@ import { Calendar, CalendarPlus, Clock, GitPullRequest, LayoutList, MessageSquar
 import { api } from "../api/client.js";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useCategories } from "../context/CategoriesContext.jsx";
+import { useToast, errorToastFor } from "../context/ToastContext.jsx";
 import { STATUSES, STATUS_LABELS, PRIORITY_LABELS } from "../constants/status.js";
 import { playTaskCompleted, playTaskBlocked } from "../utils/soundEffects.js";
 import ConfirmModal from "./ConfirmModal.jsx";
+import LoadingIndicator from "./LoadingIndicator.jsx";
 import "../styles/TaskDetailModal.css";
 
 function computeTimeline(statusHistory) {
@@ -42,6 +44,7 @@ function statusPillClass(status) {
 
 export default function TaskDetailModal({ task, tasks, onClose, onUpdated, onDeleted, onLeveledUp }) {
   const { refresh } = useAuth();
+  const toast = useToast();
   const { categories, getCategoryDisplay } = useCategories();
   const [detail, setDetail] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -88,16 +91,24 @@ export default function TaskDetailModal({ task, tasks, onClose, onUpdated, onDel
         parentTaskId: parentTaskId || null,
         status
       });
-      onUpdated(updated);
-      if (updated.status === "DONE") await refresh();
+      // Keep the old detail (and its timeline) rendered until the fresh one
+      // arrives instead of clearing it, so the modal never flashes empty.
+      await onUpdated(updated);
+      if (updated.status === "DONE") refresh();
       if (leveledUpTo) onLeveledUp(leveledUpTo);
+      const completedNow = updated.status === "DONE" && task.status !== "DONE";
       if (updated.status !== task.status) {
         if (updated.status === "DONE") playTaskCompleted();
         if (updated.status === "BLOCKED") playTaskBlocked();
       }
+      toast.success(completedNow ? `Quest complete: ${updated.title}` : "Quest updated", {
+        description: completedNow ? `+${task.xpValue} XP earned` : updated.title
+      });
+      setIsEditing(false);
       const { task: full } = await api.tasks.get(task.id);
       setDetail(full);
-      setIsEditing(false);
+    } catch (err) {
+      errorToastFor(toast, err, "Changes couldn't be saved");
     } finally {
       setIsSaving(false);
     }
@@ -122,7 +133,10 @@ export default function TaskDetailModal({ task, tasks, onClose, onUpdated, onDel
     setIsAbandoning(true);
     try {
       await api.tasks.remove(task.id);
+      toast.info("Quest abandoned", { description: task.title });
       onDeleted(task.id);
+    } catch (err) {
+      errorToastFor(toast, err, "Quest couldn't be abandoned");
     } finally {
       setIsAbandoning(false);
       setShowAbandonConfirm(false);
@@ -313,7 +327,11 @@ export default function TaskDetailModal({ task, tasks, onClose, onUpdated, onDel
                   </div>
                 </div>
               ))}
-              {timelineEvents.length === 0 && <p className="task-detail-modal__timeline-empty">Loading history...</p>}
+              {timelineEvents.length === 0 && (
+                <div className="task-detail-modal__timeline-empty">
+                  <LoadingIndicator size="sm" label="Loading history..." />
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -343,9 +361,15 @@ export default function TaskDetailModal({ task, tasks, onClose, onUpdated, onDel
                 <button type="button" className="task-detail-modal__secondary" onClick={handleCancelEdit}>
                   Cancel
                 </button>
-                <button type="button" className="task-detail-modal__primary" onClick={handleSave} disabled={isSaving}>
-                  <Save size={14} />
-                  {isSaving ? "Saving..." : "Save Changes"}
+                <button type="button" className="task-detail-modal__primary btn-lift" onClick={handleSave} disabled={isSaving}>
+                  {isSaving ? (
+                    <LoadingIndicator size="sm" tone="light" label="Saving..." />
+                  ) : (
+                    <>
+                      <Save size={14} />
+                      Save Changes
+                    </>
+                  )}
                 </button>
               </>
             )}

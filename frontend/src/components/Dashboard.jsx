@@ -1,22 +1,27 @@
-import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Compass, Plus, Trash2, ArrowUpDown, Route } from "lucide-react";
 import { api } from "../api/client.js";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useCategories } from "../context/CategoriesContext.jsx";
+import { useToast, errorToastFor } from "../context/ToastContext.jsx";
 import { STATUSES, STATUS_LABELS } from "../constants/status.js";
 import { DEFAULT_SORT, SORT_OPTIONS } from "../constants/sort.js";
 import { playTaskCompleted, playTaskBlocked } from "../utils/soundEffects.js";
+import { notifyStatusChange, withStatus } from "../utils/taskFeedback.js";
 import AttentionToday from "./AttentionToday.jsx";
 import TaskList from "./TaskList.jsx";
 import AddTaskModal from "./AddTaskModal.jsx";
 import TaskDetailModal from "./TaskDetailModal.jsx";
 import LevelUpNotification from "./LevelUpNotification.jsx";
 import ConfirmModal from "./ConfirmModal.jsx";
+import LoadingIndicator from "./LoadingIndicator.jsx";
 import "../styles/Dashboard.css";
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const toast = useToast();
   const { refresh } = useAuth();
   const { categories } = useCategories();
   const [tasks, setTasks] = useState([]);
@@ -33,6 +38,10 @@ export default function Dashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState(DEFAULT_SORT);
 
+  // Latest list for callbacks that outlive a render (toast Undo actions)
+  const tasksRef = useRef(tasks);
+  tasksRef.current = tasks;
+
   const loadTasks = async () => {
     const { tasks: loaded } = await api.tasks.list();
     setTasks(loaded);
@@ -41,10 +50,25 @@ export default function Dashboard() {
   useEffect(() => {
     (async () => {
       setIsLoading(true);
-      await loadTasks();
-      setIsLoading(false);
+      try {
+        await loadTasks();
+      } catch (err) {
+        errorToastFor(toast, err, "Couldn't load your quests");
+      } finally {
+        setIsLoading(false);
+      }
     })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // "View" actions elsewhere (e.g. an approved Oracle quest) land here with
+  // the task to open; the state is cleared so a refresh doesn't reopen it.
+  useEffect(() => {
+    const openTaskId = location.state?.openTaskId;
+    if (!openTaskId || isLoading) return;
+    if (tasks.some(t => t.id === openTaskId)) setSelectedTaskId(openTaskId);
+    navigate(location.pathname, { replace: true, state: null });
+  }, [location.state, isLoading, tasks, navigate, location.pathname]);
 
   const filteredTasks = useMemo(
     () =>
@@ -70,20 +94,61 @@ export default function Dashboard() {
   // A single task's own status/fields aren't enough to keep chain progress correct on its
   // parent (and siblings), so every mutation reloads the full list from the server instead
   // of patching one row in place.
-  const applyStatusChange = async (taskId, status) => {
-    const { leveledUpTo } = await api.tasks.changeStatus(taskId, status);
-    await loadTasks();
-    if (status === "DONE") await refresh();
-    if (leveledUpTo) setLevelUp(leveledUpTo);
-    if (status === "DONE") playTaskCompleted();
-    if (status === "BLOCKED") playTaskBlocked();
+  //
+  // The changed row is patched optimistically first so the select/badge never
+  // snaps back while the request is in flight; failure rolls it back.
+  const applyStatusChange = async (taskId, status, { silent = false } = {}) => {
+    const task = tasksRef.current.find((t) => t.id === taskId);
+    if (!task || task.status === status) return;
+    const previousStatus = task.status;
+    setTasks((prev) => withStatus(prev, taskId, status));
+    try {
+      const { leveledUpTo } = await api.tasks.changeStatus(taskId, status);
+      await loadTasks();
+      if (status === "DONE") refresh();
+      if (leveledUpTo) setLevelUp(leveledUpTo);
+      if (status === "DONE") playTaskCompleted();
+      if (status === "BLOCKED") playTaskBlocked();
+      if (!silent) {
+        notifyStatusChange(toast, {
+          task,
+          status,
+          onUndo: () => applyStatusChange(taskId, previousStatus, { silent: true }),
+        });
+      }
+    } catch (err) {
+      setTasks((prev) => withStatus(prev, taskId, previousStatus));
+      errorToastFor(toast, err, "Status change failed");
+    }
   };
 
   const handleQuickComplete = (taskId) => applyStatusChange(taskId, "DONE");
 
+  // Undo is a real delete of the quest that was just created - nothing else
+  // can depend on it yet, so this is safe to offer.
   const handleCreateTask = async (payload) => {
-    await api.tasks.create(payload);
-    await loadTasks();
+    try {
+      const { task: created } = await api.tasks.create(payload);
+      await loadTasks();
+      toast.success(`Quest forged: ${created.title}`, {
+        description: `${created.priorityType === "MAIN" ? "Main" : "Side"} quest · +${created.xpValue} XP on completion`,
+        action: {
+          label: "Undo",
+          onClick: async () => {
+            try {
+              await api.tasks.remove(created.id);
+              await loadTasks();
+              toast.info("Quest removed", { description: created.title });
+            } catch (err) {
+              errorToastFor(toast, err, "Couldn't undo");
+            }
+          },
+        },
+      });
+    } catch (err) {
+      errorToastFor(toast, err, "Quest couldn't be created");
+      throw err;
+    }
   };
 
   const handleTaskUpdated = async () => {
@@ -98,8 +163,11 @@ export default function Dashboard() {
   const handleDeleteCompleted = async () => {
     setIsDeletingCompleted(true);
     try {
-      await api.tasks.removeCompleted();
+      const { deletedCount } = await api.tasks.removeCompleted();
       await loadTasks();
+      toast.success(`Deleted ${deletedCount} completed quest${deletedCount === 1 ? "" : "s"}`);
+    } catch (err) {
+      errorToastFor(toast, err, "Couldn't delete completed quests");
     } finally {
       setIsDeletingCompleted(false);
       setShowDeleteCompletedConfirm(false);
@@ -112,7 +180,11 @@ export default function Dashboard() {
   const selectedTask = tasks.find((t) => t.id === selectedTaskId) || null;
 
   if (isLoading)
-    return <div className="dashboard__loading">Loading your quest log...</div>;
+    return (
+      <div className="dashboard__loading">
+        <LoadingIndicator variant="panel" size="lg" label="Loading your quest log..." />
+      </div>
+    );
 
   return (
     <div className="dashboard">
@@ -148,7 +220,7 @@ export default function Dashboard() {
           </button>
           <button
             type="button"
-            className="dashboard__add-button"
+            className="dashboard__add-button btn-lift"
             onClick={() => setShowAddModal(true)}
           >
             <Plus size={14} />
