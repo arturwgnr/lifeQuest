@@ -107,4 +107,51 @@ router.patch("/me", requireAuth, async (req, res) => {
   res.json({ user: toPublicUser(user) });
 });
 
+// Permanently deletes the account and every row that belongs to it. Requires
+// the current password plus a typed confirmation phrase (the account name or
+// DELETE). Runs as one transaction so a failure never leaves a half-deleted
+// account behind. Deletion order matters: Category, PillarGroup and Pillar
+// are referenced with ON DELETE RESTRICT, so their dependents go first.
+router.delete("/me", requireAuth, async (req, res) => {
+  const { password, confirmation } = req.body || {};
+  if (!password || !confirmation) {
+    return res.status(400).json({ error: "password and confirmation are required" });
+  }
+
+  try {
+    const user = await prisma.user.findUnique({ where: { id: req.userId } });
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    const valid = await verifyPassword(password, user.passwordHash);
+    if (!valid) return res.status(401).json({ error: "Incorrect password", field: "password" });
+
+    const phrase = String(confirmation).trim();
+    if (phrase !== "DELETE" && phrase !== user.name.trim()) {
+      return res.status(400).json({ error: "Confirmation phrase does not match", field: "confirmation" });
+    }
+
+    const userId = user.id;
+    await prisma.$transaction([
+      // Conversations cascade to messages and suggestions
+      prisma.oracleConversation.deleteMany({ where: { userId } }),
+      // Logs cascade to their entries, which reference Pillar (RESTRICT)
+      prisma.dailyPillarLog.deleteMany({ where: { userId } }),
+      // Groups cascade to pillars
+      prisma.pillarGroup.deleteMany({ where: { userId } }),
+      // Tasks cascade to status history; parent links are SET NULL
+      prisma.task.deleteMany({ where: { userId } }),
+      prisma.category.deleteMany({ where: { userId } }),
+      prisma.journalEntry.deleteMany({ where: { userId } }),
+      prisma.journalWeeklyInsight.deleteMany({ where: { userId } }),
+      prisma.user.delete({ where: { id: userId } })
+    ]);
+
+    clearSessionCookie(res);
+    res.status(204).end();
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Account could not be deleted. Nothing was removed, please try again." });
+  }
+});
+
 module.exports = { router, toPublicUser };

@@ -1,0 +1,340 @@
+.delete-account {
+  position: relative;
+  width: 100%;
+  max-width: 27rem;
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+  background: var(--surface);
+  border: 1px solid var(--slate-200);
+  border-radius: 1.25rem;
+  padding: 1.75rem 1.6rem 1.5rem;
+  box-shadow: 0 24px 64px -20px rgba(2, 6, 23, 0.45);
+  animation: slideInUp var(--dur-slow) var(--ease-out) both;
+}
+
+.delete-account__close {
+  position: absolute;
+  top: 0.9rem;
+  right: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: none;
+  border-radius: 0.6rem;
+  background: none;
+  color: var(--slate-400);
+}
+
+.delete-account__hero {
+  display: flex;
+  justify-content: center;
+  margin: -0.5rem 0 0.5rem;
+}
+
+.delete-account__mascot {
+  width: 7.5rem;
+  height: 7.5rem;
+  object-fit: contain;
+  filter: saturate(0.85);
+  animation: farewellSway 3.2s ease-in-out infinite;
+  transform-origin: 50% 90%;
+}
+
+@keyframes farewellSway {
+  0%,
+  100% {
+    rotate: -3deg;
+  }
+  50% {
+    rotate: 3deg;
+  }
+}
+
+.delete-account h2 {
+  font-size: 1.1875rem;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  line-height: 1.3;
+  color: var(--slate-900);
+  margin: 0 2rem 0.6rem 0;
+}
+
+.delete-account__hero + h2 {
+  text-align: center;
+  margin: 0 0 0.6rem;
+}
+
+.delete-account__hero ~ .delete-account__lead {
+  text-align: center;
+}
+
+.delete-account__lead {
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  color: var(--slate-600);
+  margin: 0 0 0.6rem;
+}
+
+.delete-account__lead code {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.05rem 0.35rem;
+  border-radius: 0.3rem;
+  background: var(--slate-100);
+  color: var(--slate-800);
+}
+
+.delete-account__step {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--rose-600);
+  margin-bottom: 0.4rem;
+}
+
+[data-theme="dark"] .delete-account__step {
+  color: #fb7185;
+}
+
+.delete-account__warning {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  margin: 1rem 0 0.25rem;
+  padding: 0.8rem 0.9rem;
+  border-radius: 0.85rem;
+  background: var(--rose-50);
+  border: 1px solid var(--rose-100);
+  color: var(--rose-700);
+}
+
+[data-theme="dark"] .delete-account__warning,
+[data-theme="dark"] .delete-account__form-error {
+  background: rgba(244, 63, 94, 0.1);
+  border-color: rgba(244, 63, 94, 0.3);
+  color: #fda4af;
+}
+
+.delete-account__warning svg {
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+}
+
+.delete-account__warning p {
+  font-size: 0.75rem;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.delete-account__field {
+  margin-top: 1rem;
+}
+
+.delete-account__field label {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--slate-500);
+  margin-bottom: 0.35rem;
+}
+
+.delete-account__input {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.delete-account__input > svg {
+  position: absolute;
+  left: 0.8rem;
+  color: var(--slate-400);
+  pointer-events: none;
+}
+
+.delete-account__input input {
+  width: 100%;
+  height: 2.75rem;
+  padding: 0 0.9rem;
+  font-size: 0.875rem;
+  border: 1px solid var(--slate-200);
+  border-radius: 0.75rem;
+  background: var(--surface);
+  color: var(--slate-900);
+}
+
+.delete-account__input > svg ~ input {
+  padding-left: 2.3rem;
+  padding-right: 2.75rem;
+}
+
+.delete-account__input input:focus {
+  outline: none;
+  border-color: var(--rose-500);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--rose-500) 14%, transparent);
+}
+
+.delete-account__field--error .delete-account__input input {
+  border-color: var(--rose-500);
+}
+
+.delete-account__reveal {
+  position: absolute;
+  right: 0.35rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--slate-400);
+  border-radius: 0.5rem;
+}
+
+.delete-account__error {
+  font-size: 0.75rem;
+  color: var(--rose-600);
+  margin: 0.35rem 0 0;
+}
+
+.delete-account__form-error {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  margin-top: 1rem;
+  padding: 0.65rem 0.75rem;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  border-radius: 0.7rem;
+  background: var(--rose-50);
+  border: 1px solid var(--rose-100);
+  color: var(--rose-700);
+}
+
+.delete-account__form-error svg {
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+}
+
+/* Cancel and continue get the same size and weight on purpose: leaving
+   must never be easier to hit than staying. */
+.delete-account__actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+  margin-top: 1.4rem;
+}
+
+.delete-account__actions button {
+  min-height: 2.75rem;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  border-radius: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  line-height: 1.25;
+}
+
+.delete-account__cancel {
+  background: var(--ink);
+  color: white;
+  border: 1px solid var(--ink);
+}
+
+.delete-account__continue {
+  background: var(--surface);
+  color: var(--rose-600);
+  border: 1px solid var(--rose-100);
+}
+
+.delete-account__destroy {
+  background: var(--rose-600);
+  color: white;
+  border: 1px solid var(--rose-600);
+}
+
+.delete-account__destroy:disabled {
+  background: var(--slate-200);
+  border-color: var(--slate-200);
+  color: var(--slate-500);
+  cursor: not-allowed;
+}
+
+.delete-account__actions button:disabled:not(.delete-account__destroy) {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+[data-theme="dark"] .delete-account__continue {
+  color: #fb7185;
+  border-color: rgba(244, 63, 94, 0.35);
+}
+
+[data-theme="dark"] .delete-account__cancel {
+  border-color: var(--ink-border);
+}
+
+@media (hover: hover) {
+  .delete-account__close:not(:disabled):hover {
+    color: var(--slate-700);
+    background: var(--slate-100);
+  }
+
+  .delete-account__reveal:hover {
+    color: var(--hover-accent);
+  }
+
+  .delete-account__cancel:not(:disabled):hover {
+    background: var(--ink-elevated);
+  }
+
+  .delete-account__continue:hover {
+    background: var(--hover-danger-bg);
+    border-color: var(--hover-danger-border);
+  }
+
+  .delete-account__destroy:not(:disabled):hover {
+    background: var(--rose-700);
+    border-color: var(--rose-700);
+  }
+}
+
+@media (max-width: 480px) {
+  .delete-account {
+    padding: 1.5rem 1.15rem 1.25rem;
+  }
+
+  .delete-account__actions {
+    grid-template-columns: 1fr;
+  }
+
+  /* Stacked: the safe choice stays on top */
+  .delete-account__cancel {
+    order: -1;
+  }
+
+  .delete-account__input input {
+    font-size: 1rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .delete-account,
+  .delete-account__mascot {
+    animation: none;
+  }
+}
