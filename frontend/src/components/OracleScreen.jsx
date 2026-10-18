@@ -1,7 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { Send, Mic, Sparkles, Check, X, Edit2, HelpCircle } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Send, Mic, Sparkles, Check, X, Edit2, HelpCircle, ChevronDown, Square } from "lucide-react";
 import { api } from "../api/client.js";
+import { useAuth } from "../context/AuthContext.jsx";
 import { useCategories } from "../context/CategoriesContext.jsx";
+import { useToast, errorToastFor } from "../context/ToastContext.jsx";
 import {
   playMessageSent,
   playMessageReceived,
@@ -10,6 +13,7 @@ import {
   playReject,
 } from "../utils/soundEffects.js";
 import LoadingIndicator from "./LoadingIndicator.jsx";
+import AvatarBadge from "./AvatarBadge.jsx";
 import "../styles/OracleScreen.css";
 
 const RECORDING_MAX_DURATION_MS = 60 * 1000;
@@ -42,8 +46,21 @@ function pendingSuggestionsFrom(messages) {
   );
 }
 
+function OracleOrb({ size = 28 }) {
+  return (
+    <span className="oracle-orb" style={{ width: size, height: size }} aria-hidden="true">
+      <Sparkles size={Math.round(size * 0.5)} />
+    </span>
+  );
+}
+
 export default function OracleScreen() {
+  const navigate = useNavigate();
+  const toast = useToast();
+  const { user } = useAuth();
   const { categories, getCategoryDisplay } = useCategories();
+  const [busySuggestionId, setBusySuggestionId] = useState(null);
+  const suggestionsRef = useRef(null);
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -169,9 +186,14 @@ export default function OracleScreen() {
       const afterCount = pendingSuggestionsFrom(loaded).length;
       if (afterCount > beforeCount) playQuestProposed();
       else playMessageReceived();
-    } catch {
+    } catch (err) {
       // The backend persists an error message on the conversation even on failure; reload picks it up.
-      await reloadConversation();
+      await reloadConversation().catch(() => {});
+      if (err.status === 502) {
+        toast.error("The Oracle is unavailable", { description: "Your message was kept. Try again in a moment." });
+      } else {
+        errorToastFor(toast, err, "Message couldn't be sent");
+      }
     } finally {
       setIsSending(false);
       api.profile.aiUsage().then(setAiUsage);
@@ -191,16 +213,38 @@ export default function OracleScreen() {
     );
   };
 
+  // Approval is the only path from a suggestion to a real Task; the toast
+  // confirms exactly what was created and links straight to it.
   const handleApprove = async (suggestion) => {
-    await api.oracle.approveSuggestion(suggestion.id);
-    updateSuggestionLocally(suggestion.id, { status: "APPROVED" });
-    playApprove();
+    setBusySuggestionId(suggestion.id);
+    try {
+      const { task } = await api.oracle.approveSuggestion(suggestion.id);
+      updateSuggestionLocally(suggestion.id, { status: "APPROVED" });
+      playApprove();
+      toast.success(`Quest forged: ${task.title}`, {
+        description: `Approved from the Oracle · +${task.xpValue} XP on completion`,
+        action: { label: "View", onClick: () => navigate("/app", { state: { openTaskId: task.id } }) },
+      });
+    } catch (err) {
+      errorToastFor(toast, err, "Couldn't approve this quest");
+    } finally {
+      setBusySuggestionId(null);
+    }
   };
 
+  // No Undo here: a rejected suggestion can't be reopened on the backend.
   const handleReject = async (suggestion) => {
-    await api.oracle.rejectSuggestion(suggestion.id);
-    updateSuggestionLocally(suggestion.id, { status: "REJECTED" });
-    playReject();
+    setBusySuggestionId(suggestion.id);
+    try {
+      await api.oracle.rejectSuggestion(suggestion.id);
+      updateSuggestionLocally(suggestion.id, { status: "REJECTED" });
+      playReject();
+      toast.info("Proposal rejected", { description: suggestion.title });
+    } catch (err) {
+      errorToastFor(toast, err, "Couldn't reject this proposal");
+    } finally {
+      setBusySuggestionId(null);
+    }
   };
 
   const handleStartEdit = (suggestion) => {
@@ -220,9 +264,17 @@ export default function OracleScreen() {
       notes: editNotes,
       xpValue: editXp,
     };
-    await api.oracle.editSuggestion(id, patch);
-    updateSuggestionLocally(id, patch);
-    setEditingSuggestionId(null);
+    setBusySuggestionId(id);
+    try {
+      await api.oracle.editSuggestion(id, patch);
+      updateSuggestionLocally(id, patch);
+      setEditingSuggestionId(null);
+      toast.success("Proposal updated", { description: "Still pending, approve it when it looks right." });
+    } catch (err) {
+      errorToastFor(toast, err, "Couldn't save your edits");
+    } finally {
+      setBusySuggestionId(null);
+    }
   };
 
   const pendingSuggestions = pendingSuggestionsFrom(messages);
@@ -234,26 +286,48 @@ export default function OracleScreen() {
       </div>
     );
 
+  const creditsLeft = aiUsage ? aiUsage.remaining : null;
+  const creditsPct = aiUsage ? Math.max(0, Math.min(100, (aiUsage.remaining / aiUsage.limit) * 100)) : 0;
+  const isOutOfCredits = aiUsage ? aiUsage.remaining <= 0 : false;
+
   return (
     <div className="oracle-screen">
       <div className="oracle-screen__chat">
         <div className="oracle-screen__chat-header">
-          <div>
-            <Sparkles size={16} />
-            <h3>The Oracle's Whispers</h3>
+          <div className="oracle-screen__identity">
+            <OracleOrb size={34} />
+            <div>
+              <h3>The Oracle</h3>
+              <p>Narrate your day. Nothing is filed until you approve it.</p>
+            </div>
           </div>
-          <span className="oracle-screen__chat-header-meta">
-            Powered by the Oracle
+          <div className="oracle-screen__chat-header-meta">
             {aiUsage && (
-              <span className="oracle-screen__ai-usage">
-                {aiUsage.remaining}/{aiUsage.limit} today
+              <span
+                className={`oracle-screen__ai-usage${isOutOfCredits ? " oracle-screen__ai-usage--empty" : ""}`}
+                title={`${creditsLeft} of ${aiUsage.limit} AI credits left today`}
+              >
+                <span className="oracle-screen__ai-usage-track">
+                  <span style={{ width: `${creditsPct}%` }} />
+                </span>
+                {creditsLeft}/{aiUsage.limit} today
               </span>
             )}
-          </span>
+            {pendingSuggestions.length > 0 && (
+              <button
+                type="button"
+                className="oracle-screen__jump"
+                onClick={() => suggestionsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+              >
+                {pendingSuggestions.length} proposed
+                <ChevronDown size={13} />
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="oracle-screen__presets">
-          <span>Narrations:</span>
+          <span>Try</span>
           {NARRATION_PRESETS.map((preset) => (
             <button
               key={preset.label}
@@ -268,8 +342,8 @@ export default function OracleScreen() {
         <div className="oracle-screen__stream">
           {messages.length === 0 ? (
             <div className="oracle-screen__empty">
-              <Sparkles size={28} />
-              <p>The Oracle sits quietly, awaiting your entry.</p>
+              <OracleOrb size={52} />
+              <p className="oracle-screen__empty-title">The Oracle sits quietly, awaiting your entry.</p>
               <p className="oracle-screen__empty-sub">
                 Narrate your daily progress or future plans naturally. I will
                 help organize and formulate structured quests.
@@ -280,10 +354,12 @@ export default function OracleScreen() {
               if (msg.sender === "ORACLE_QUESTION") {
                 return (
                   <div key={msg.id} className="oracle-screen__question">
-                    <div className="oracle-screen__question-icon">
-                      <HelpCircle size={16} />
+                    <div className="oracle-screen__question-head">
+                      <span className="oracle-screen__question-icon">
+                        <HelpCircle size={15} />
+                      </span>
+                      <h4>The Oracle seeks clarity</h4>
                     </div>
-                    <h4>The Oracle seeks clarity:</h4>
                     <p>{msg.text}</p>
                     <div className="oracle-screen__question-actions">
                       <button
@@ -293,8 +369,10 @@ export default function OracleScreen() {
                             "Yes, please complete the existing task.",
                           )
                         }
+                        disabled={isSending}
                       >
-                        "Yes, resolve existing quest"
+                        <Check size={13} />
+                        Yes, resolve existing quest
                       </button>
                       <button
                         type="button"
@@ -302,8 +380,9 @@ export default function OracleScreen() {
                         onClick={() =>
                           handleAnswerQuestion("No, this is a fresh new task.")
                         }
+                        disabled={isSending}
                       >
-                        "No, forge a new quest"
+                        No, forge a new quest
                       </button>
                     </div>
                   </div>
@@ -316,6 +395,7 @@ export default function OracleScreen() {
                   key={msg.id}
                   className={`oracle-screen__bubble-row ${isUser ? "oracle-screen__bubble-row--user" : ""}`}
                 >
+                  {!isUser && <OracleOrb size={28} />}
                   <div
                     className={`oracle-screen__bubble ${isUser ? "oracle-screen__bubble--user" : "oracle-screen__bubble--assistant"}`}
                   >
@@ -327,12 +407,23 @@ export default function OracleScreen() {
                       })}
                     </span>
                   </div>
+                  {isUser && (
+                    <AvatarBadge
+                      level={user.level}
+                      xp={user.xp}
+                      gender={user.gender}
+                      size={30}
+                      showLevel={false}
+                      showProgress={false}
+                    />
+                  )}
                 </div>
               );
             })
           )}
           {isSending && (
             <div className="oracle-screen__bubble-row">
+              <OracleOrb size={28} />
               <div className="oracle-screen__typing">
                 <span />
                 <span />
@@ -346,6 +437,7 @@ export default function OracleScreen() {
 
         <div className="oracle-screen__input-bar">
           <form
+            className={`oracle-screen__composer${isRecording ? " oracle-screen__composer--recording" : ""}`}
             onSubmit={(e) => {
               e.preventDefault();
               if (inputText.trim()) handleSubmitNarration(inputText);
@@ -355,6 +447,7 @@ export default function OracleScreen() {
               <div className="oracle-screen__recording-overlay">
                 {isRecording ? (
                   <>
+                    <span className="oracle-screen__recording-dot" aria-hidden="true" />
                     <span
                       className="oracle-screen__recording-waveform"
                       aria-hidden="true"
@@ -363,11 +456,12 @@ export default function OracleScreen() {
                       <span />
                       <span />
                       <span />
+                      <span />
                     </span>
-                    <span>Recording narration...</span>
+                    <span>Recording narration... tap the mic to stop</span>
                   </>
                 ) : (
-                  <span>Transcribing...</span>
+                  <LoadingIndicator size="sm" tone="light" label="Transcribing..." />
                 )}
               </div>
             )}
@@ -377,6 +471,7 @@ export default function OracleScreen() {
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               placeholder="Speak naturally: 'I completed my health quest and should start a work report tomorrow...'"
+              aria-label="Message the Oracle"
             />
 
             <button
@@ -386,26 +481,34 @@ export default function OracleScreen() {
               }`}
               onClick={handleToggleRecording}
               disabled={!SpeechRecognitionApi || isTranscribing}
+              aria-label={isRecording ? "Stop recording" : "Dictate narration"}
               title={
                 SpeechRecognitionApi
-                  ? "Dictate narration"
+                  ? isRecording
+                    ? "Stop recording"
+                    : "Dictate narration"
                   : "Voice input is not supported in this browser"
               }
             >
-              <Mic size={16} />
+              {isRecording ? <Square size={13} /> : <Mic size={16} />}
             </button>
 
-            <button type="submit" disabled={!inputText.trim() || isSending}>
-              <Send size={16} />
+            <button
+              type="submit"
+              className="oracle-screen__send"
+              disabled={!inputText.trim() || isSending}
+              aria-label="Send to the Oracle"
+            >
+              <Send size={15} />
             </button>
           </form>
         </div>
       </div>
 
-      <div className="oracle-screen__suggestions">
+      <div className="oracle-screen__suggestions" ref={suggestionsRef}>
         <div className="oracle-screen__suggestions-heading">
-          <Sparkles size={16} />
-          <h3>Oracle's Proposed Quests</h3>
+          <Sparkles size={15} />
+          <h3>Proposed Quests</h3>
           <span>{pendingSuggestions.length} Pending</span>
         </div>
 
@@ -422,13 +525,17 @@ export default function OracleScreen() {
           <div className="oracle-screen__suggestions-list">
             {pendingSuggestions.map((sug) => {
               const isEditing = editingSuggestionId === sug.id;
+              const isBusy = busySuggestionId === sug.id;
               const config = getCategoryDisplay(
                 isEditing ? editCategoryId : sug.categoryId,
               );
               const Icon = config.icon;
 
               return (
-                <div key={sug.id} className="suggestion-card">
+                <div
+                  key={sug.id}
+                  className={`suggestion-card suggestion-card--${config.tone}${isBusy ? " suggestion-card--busy" : ""}`}
+                >
                   {!isEditing ? (
                     <>
                       <div className="suggestion-card__top">
@@ -440,7 +547,7 @@ export default function OracleScreen() {
                         </span>
                         <div className="suggestion-card__meta">
                           <span className="suggestion-card__priority">
-                            {sug.priorityType}
+                            {sug.priorityType === "MAIN" ? "Main" : "Side"}
                           </span>
                           <span className="suggestion-card__xp">
                             +{sug.xpValue} XP
@@ -456,7 +563,9 @@ export default function OracleScreen() {
                       <div className="suggestion-card__actions">
                         <button
                           type="button"
+                          className="suggestion-card__edit-btn"
                           onClick={() => handleStartEdit(sug)}
+                          disabled={isBusy}
                         >
                           <Edit2 size={12} />
                           Edit
@@ -465,16 +574,22 @@ export default function OracleScreen() {
                           type="button"
                           className="suggestion-card__reject"
                           onClick={() => handleReject(sug)}
+                          disabled={isBusy}
                         >
                           <X size={14} />
                           Reject
                         </button>
                         <button
                           type="button"
-                          className="suggestion-card__approve"
+                          className="suggestion-card__approve btn-lift"
                           onClick={() => handleApprove(sug)}
+                          disabled={isBusy}
                         >
-                          <Check size={14} />
+                          {isBusy ? (
+                            <LoadingIndicator size="sm" tone="light" />
+                          ) : (
+                            <Check size={14} />
+                          )}
                           Approve Quest
                         </button>
                       </div>
@@ -535,6 +650,7 @@ export default function OracleScreen() {
                         <button
                           type="button"
                           onClick={() => setEditingSuggestionId(null)}
+                          disabled={isBusy}
                         >
                           Cancel
                         </button>
@@ -542,8 +658,9 @@ export default function OracleScreen() {
                           type="button"
                           className="suggestion-card__save"
                           onClick={() => handleSaveEdit(sug.id)}
+                          disabled={isBusy}
                         >
-                          Save
+                          {isBusy ? "Saving..." : "Save"}
                         </button>
                       </div>
                     </div>
