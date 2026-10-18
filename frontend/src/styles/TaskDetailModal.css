@@ -42,9 +42,11 @@
   padding: 0.25rem;
 }
 
-.task-detail-modal__header button:hover {
-  background: var(--stone-100);
-  color: var(--stone-600);
+@media (hover: hover) {
+  .task-detail-modal__header button:hover {
+    background: var(--stone-100);
+    color: var(--hover-accent);
+  }
 }
 
 .task-detail-modal__body {
@@ -395,9 +397,13 @@
   border-radius: var(--radius-lg);
 }
 
-.task-detail-modal__delete:hover {
-  background: var(--rose-50);
-  border-color: var(--rose-100);
+@media (hover: hover) {
+  /* Destructive */
+  .task-detail-modal__delete:hover {
+    color: var(--hover-danger);
+    background: var(--hover-danger-bg);
+    border-color: var(--hover-danger-border);
+  }
 }
 
 .task-detail-modal__footer-actions {
@@ -417,8 +423,10 @@
   color: var(--stone-700);
 }
 
-.task-detail-modal__secondary:hover {
-  background: var(--stone-50);
+@media (hover: hover) {
+  .task-detail-modal__secondary:hover {
+    background: var(--stone-50);
+  }
 }
 
 .task-detail-modal__primary {
@@ -435,8 +443,10 @@
   box-shadow: var(--shadow-sm);
 }
 
-.task-detail-modal__primary:hover {
-  background: var(--ink-elevated);
+@media (hover: hover) {
+  .task-detail-modal__primary:not(:disabled):hover {
+    background: var(--emerald-600);
+  }
 }
 
 .task-detail-modal__primary:disabled {

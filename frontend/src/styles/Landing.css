@@ -101,8 +101,10 @@
   transition: color 0.15s ease;
 }
 
-.landing__nav-cta:hover {
-  color: var(--landing-text);
+@media (hover: hover) {
+  .landing__nav-cta:hover {
+    color: var(--landing-text);
+  }
 }
 
 .landing__nav-register {
@@ -120,9 +122,11 @@
   transition: all 0.15s ease;
 }
 
-.landing__nav-register:hover {
-  background: var(--ink-elevated);
-  transform: translateY(-1px);
+@media (hover: hover) {
+  .landing__nav-register:hover {
+    background: var(--ink-elevated);
+    transform: translateY(-1px);
+  }
 }
 
 /* ---------- Section blocks: full-bleed alternating backgrounds ---------- */
@@ -330,9 +334,11 @@
   transition: all 0.15s ease;
 }
 
-.landing__primary-cta:hover {
-  background: var(--ink-elevated);
-  transform: translateY(-1px);
+@media (hover: hover) {
+  .landing__primary-cta:hover {
+    background: var(--ink-elevated);
+    transform: translateY(-1px);
+  }
 }
 
 .landing__ghost-cta {
@@ -348,9 +354,11 @@
   transition: all 0.15s ease;
 }
 
-.landing__ghost-cta:hover {
-  color: var(--landing-text);
-  border-color: var(--landing-text-muted);
+@media (hover: hover) {
+  .landing__ghost-cta:hover {
+    color: var(--landing-text);
+    border-color: var(--landing-text-muted);
+  }
 }
 
 /* Hero decorative visual (looping animation) */
@@ -534,8 +542,10 @@
   transition: all 0.2s ease;
 }
 
-.landing__step:hover {
-  background: var(--landing-accent-soft);
+@media (hover: hover) {
+  .landing__step:hover {
+    background: var(--landing-accent-soft);
+  }
 }
 
 .landing__step--active {
@@ -835,8 +845,10 @@
   transition: background 0.2s ease;
 }
 
-.landing__feature-card--on-dark:hover .landing__feature-flourish {
-  background: var(--landing-accent-on-dark);
+@media (hover: hover) {
+  .landing__feature-card--on-dark:hover .landing__feature-flourish {
+    background: var(--landing-accent-on-dark);
+  }
 }
 
 /* ---------- Sign In section ---------- */
@@ -1111,8 +1123,10 @@
   cursor: pointer;
 }
 
-.landing__signin-card:hover {
-  box-shadow: 1px 1px 30px #32548f27;
+@media (hover: hover) {
+  .landing__signin-card:hover {
+    box-shadow: 1px 1px 30px #32548f27;
+  }
 }
 
 .landing__signin-icon {
@@ -1158,8 +1172,10 @@
   text-decoration: none;
 }
 
-.landing__signin-secondary:hover {
-  color: var(--landing-text);
+@media (hover: hover) {
+  .landing__signin-secondary:hover {
+    color: var(--landing-text);
+  }
 }
 
 /* ---------- Footer ---------- */
@@ -1255,8 +1271,10 @@
   text-decoration: none;
 }
 
-.landing__footer-column a:hover {
-  color: var(--landing-text);
+@media (hover: hover) {
+  .landing__footer-column a:hover {
+    color: var(--landing-text);
+  }
 }
 
 .landing__footer-bottom {

@@ -35,8 +35,10 @@
   color: var(--stone-400);
 }
 
-.add-task-modal__header button:hover {
-  color: var(--stone-600);
+@media (hover: hover) {
+  .add-task-modal__header button:hover {
+    color: var(--hover-accent);
+  }
 }
 
 .add-task-modal__form {
@@ -100,8 +102,10 @@
   color: var(--stone-700);
 }
 
-.add-task-modal__cancel:hover {
-  background: var(--stone-50);
+@media (hover: hover) {
+  .add-task-modal__cancel:hover {
+    background: var(--stone-50);
+  }
 }
 
 .add-task-modal__submit {
@@ -115,8 +119,11 @@
   box-shadow: var(--shadow-sm);
 }
 
-.add-task-modal__submit:hover {
-  background: var(--ink-elevated);
+@media (hover: hover) {
+  /* Confirm action */
+  .add-task-modal__submit:not(:disabled):hover {
+    background: var(--emerald-600);
+  }
 }
 
 .add-task-modal__submit:disabled {

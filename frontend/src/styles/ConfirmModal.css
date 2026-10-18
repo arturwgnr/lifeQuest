@@ -44,9 +44,11 @@
   flex-shrink: 0;
 }
 
-.confirm-modal__header button:hover {
-  background: var(--stone-100);
-  color: var(--stone-600);
+@media (hover: hover) {
+  .confirm-modal__header button:not(:disabled):hover {
+    background: var(--stone-100);
+    color: var(--hover-accent);
+  }
 }
 
 .confirm-modal__message {
@@ -72,9 +74,11 @@
   font-weight: 600;
 }
 
-.confirm-modal__cancel:hover {
-  background: var(--stone-50);
-  color: var(--stone-900);
+@media (hover: hover) {
+  .confirm-modal__cancel:hover {
+    background: var(--stone-50);
+    color: var(--stone-900);
+  }
 }
 
 .confirm-modal__confirm {
@@ -87,8 +91,10 @@
   font-weight: 600;
 }
 
-.confirm-modal__confirm:hover {
-  background: var(--rose-700);
+@media (hover: hover) {
+  .confirm-modal__confirm:hover {
+    background: var(--rose-700);
+  }
 }
 
 .confirm-modal__confirm:disabled,

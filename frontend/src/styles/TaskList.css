@@ -176,9 +176,11 @@
   border-radius: 0.25rem;
 }
 
-.task-root__collapse:hover {
-  background: var(--slate-100);
-  color: var(--slate-700);
+@media (hover: hover) {
+  .task-root__collapse:hover {
+    background: var(--hover-accent-bg);
+    color: var(--hover-accent);
+  }
 }
 
 .task-root__spacer {
@@ -398,11 +400,19 @@
   color: var(--slate-500);
 }
 
-.task-root__view:hover,
-.task-sub__view:hover {
-  background: var(--slate-50);
-  border-color: var(--slate-200);
-  color: var(--slate-700);
+@media (hover: hover) {
+  /* Icon-only: only the icon picks up the accent */
+  .task-root__view:hover,
+  .task-sub__view:hover {
+    color: var(--hover-accent);
+    background: var(--hover-accent-bg);
+  }
+
+  /* Completing is a confirm action */
+  .task-root__complete:hover,
+  .task-sub__complete:hover {
+    background: var(--emerald-600);
+  }
 }
 
 .task-root__complete {
@@ -437,8 +447,10 @@
   border-top: none;
 }
 
-.task-sub:hover {
-  background: rgba(248, 250, 252, 0.5);
+@media (hover: hover) {
+  .task-sub:hover {
+    background: rgba(248, 250, 252, 0.5);
+  }
 }
 
 .task-sub--done {
