@@ -29,6 +29,7 @@ import {
   Layers,
 } from "lucide-react";
 import BrandMark from "./BrandMark.jsx";
+import FeatureCarousel from "./FeatureCarousel.jsx";
 import {
   AvatarEvolution,
   ChainMock,
@@ -52,41 +53,49 @@ const PRODUCT_FACTS = [
   { icon: Smartphone, label: "Mobile-ready" },
 ];
 
+// Showcase items, presented one at a time by FeatureCarousel
 const SHOWCASE = [
   {
     key: "oracle",
     icon: Sparkles,
     title: "The Oracle",
-    copy: "Narrate your day. It proposes structured quests, asks when something is ambiguous, and files nothing until you approve.",
-    Mock: OracleMock,
+    copy: "Narrate your day. It proposes quests, asks when unsure, and files nothing until you approve.",
+    Visual: OracleMock,
   },
   {
     key: "chains",
     icon: GitPullRequest,
     title: "Quest chains",
     copy: "Main quests with dependent steps, and the whole chain's progress at a glance.",
-    Mock: ChainMock,
+    Visual: ChainMock,
   },
   {
     key: "planning",
     icon: Route,
     title: "Planning Mode",
     copy: "Drag quests into the order you will actually work through them.",
-    Mock: PlanningMock,
+    Visual: PlanningMock,
   },
   {
     key: "pillars",
     icon: CalendarCheck,
     title: "Pillars",
     copy: "Daily habits scored by percentage, from red through yellow to green.",
-    Mock: PillarsMock,
+    Visual: PillarsMock,
   },
   {
     key: "stats",
     icon: BarChart3,
     title: "Stats",
     copy: "Consistency, completion and where quests get stuck, from real status history.",
-    Mock: StatsMock,
+    Visual: StatsMock,
+  },
+  {
+    key: "avatar",
+    icon: Award,
+    title: "Avatar evolution",
+    copy: "Eight stages from Wanderer to Transcendent, earned slowly up to level 100. Purely cosmetic.",
+    Visual: AvatarEvolution,
   },
 ];
 
@@ -436,37 +445,13 @@ export default function Landing() {
             ways to see it.
           </p>
 
-          <div className="landing__bento">
-            {SHOWCASE.map(({ key, icon: Icon, title, copy, Mock }) => (
-              <article key={key} className={`landing__bento-card landing__bento-card--${key}`} data-reveal>
-                <div className="landing__bento-text">
-                  <span className="landing__bento-icon">
-                    <Icon size={16} />
-                  </span>
-                  <h3>{title}</h3>
-                  <p>{copy}</p>
-                </div>
-                <div className="landing__bento-visual">
-                  <Mock />
-                </div>
-              </article>
-            ))}
-
-            <article className="landing__bento-card landing__bento-card--avatar" data-reveal>
-              <div className="landing__bento-text">
-                <span className="landing__bento-icon">
-                  <Award size={16} />
-                </span>
-                <h3>Profile &amp; avatar evolution</h3>
-                <p>
-                  Eight stages from Wanderer to Transcendent, earned slowly up to
-                  level 100. Purely cosmetic: XP never unlocks anything.
-                </p>
-              </div>
-              <div className="landing__bento-visual landing__bento-visual--avatar">
-                <AvatarEvolution />
-              </div>
-            </article>
+          <div data-reveal>
+            <FeatureCarousel
+              items={SHOWCASE}
+              interval={5500}
+              label="lifeQuest features"
+              className="landing__showcase-carousel"
+            />
           </div>
         </div>
       </section>
