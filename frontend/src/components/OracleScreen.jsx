@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Send, Mic, Sparkles, Check, X, Edit2, HelpCircle, ChevronDown, Square } from "lucide-react";
+import { Send, Mic, Sparkles, Check, X, Edit2, HelpCircle, ChevronDown, Square, ArrowDown } from "lucide-react";
 import { api } from "../api/client.js";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useCategories } from "../context/CategoriesContext.jsx";
@@ -17,6 +17,16 @@ import AvatarBadge from "./AvatarBadge.jsx";
 import "../styles/OracleScreen.css";
 
 const RECORDING_MAX_DURATION_MS = 60 * 1000;
+
+// Within this many px of the bottom the reader counts as "following" the
+// conversation, so new messages and late layout changes keep them pinned.
+const PIN_THRESHOLD_PX = 80;
+// How long after a smooth scroll starts we keep following it smoothly
+// instead of snapping (covers the animation itself).
+const SMOOTH_WINDOW_MS = 450;
+
+const prefersReducedMotion = () =>
+  typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
 const NARRATION_PRESETS = [
   {
@@ -76,7 +86,11 @@ export default function OracleScreen() {
   const [editNotes, setEditNotes] = useState("");
   const [editXp, setEditXp] = useState(20);
 
-  const chatEndRef = useRef(null);
+  const streamRef = useRef(null);
+  const streamContentRef = useRef(null);
+  const isPinnedRef = useRef(true);
+  const smoothUntilRef = useRef(0);
+  const [showJump, setShowJump] = useState(false);
   const recognitionRef = useRef(null);
   const recordingTimeoutRef = useRef(null);
 
@@ -95,9 +109,71 @@ export default function OracleScreen() {
     api.profile.aiUsage().then(setAiUsage);
   }, []);
 
+  // Scrolling only ever moves the stream itself. (scrollIntoView used to also
+  // scroll the whole page on mobile and started from the top of history.)
+  const scrollToBottom = useCallback((smooth) => {
+    const el = streamRef.current;
+    if (!el) return;
+    if (smooth && !prefersReducedMotion()) {
+      smoothUntilRef.current = Date.now() + SMOOTH_WINDOW_MS;
+      el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+    } else {
+      el.scrollTop = el.scrollHeight;
+    }
+    isPinnedRef.current = true;
+    setShowJump(false);
+  }, []);
+
+  const handleStreamScroll = () => {
+    const el = streamRef.current;
+    if (!el) return;
+    const distance = el.scrollHeight - el.scrollTop - el.clientHeight;
+    // Intermediate positions of our own smooth scroll must not unpin
+    if (Date.now() < smoothUntilRef.current) return;
+    const pinned = distance < PIN_THRESHOLD_PX;
+    isPinnedRef.current = pinned;
+    setShowJump(!pinned);
+  };
+
+  // Opening the Oracle: land on the latest message before the first paint,
+  // with no visible scroll, then once more on the next frame in case the
+  // history's final height settled late.
+  useLayoutEffect(() => {
+    if (isLoading) return undefined;
+    scrollToBottom(false);
+    const frame = requestAnimationFrame(() => scrollToBottom(false));
+    return () => cancelAnimationFrame(frame);
+  }, [isLoading, scrollToBottom]);
+
+  // New messages (including the optimistic one and the typing indicator):
+  // follow smoothly only if the reader is already near the bottom; otherwise
+  // leave them where they are and offer "Jump to latest".
+  const messageCount = messages.length;
+  const streamSignature = `${messageCount}:${isSending}`;
+  const lastSignatureRef = useRef(null);
+  useLayoutEffect(() => {
+    if (isLoading) return;
+    const isFirstRender = lastSignatureRef.current === null;
+    const changed = lastSignatureRef.current !== streamSignature;
+    lastSignatureRef.current = streamSignature;
+    // The opening position is handled above (instantly); only real changes animate
+    if (isFirstRender || !changed) return;
+    if (isPinnedRef.current) scrollToBottom(true);
+    else setShowJump(true);
+  }, [streamSignature, isLoading, scrollToBottom]);
+
+  // Late layout changes (fonts, proposal cards, the mobile keyboard shrinking
+  // the stream) re-pin to the bottom for anyone who was already following.
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isSending]);
+    if (isLoading || typeof ResizeObserver === "undefined") return undefined;
+    const observer = new ResizeObserver(() => {
+      if (!isPinnedRef.current) return;
+      scrollToBottom(Date.now() < smoothUntilRef.current);
+    });
+    if (streamRef.current) observer.observe(streamRef.current);
+    if (streamContentRef.current) observer.observe(streamContentRef.current);
+    return () => observer.disconnect();
+  }, [isLoading, scrollToBottom]);
 
   const clearRecordingTimeout = () => {
     if (recordingTimeoutRef.current) {
@@ -175,6 +251,7 @@ export default function OracleScreen() {
       createdAt: new Date().toISOString(),
       suggestions: [],
     };
+    isPinnedRef.current = true;
     setMessages((prev) => [...prev, optimisticMessage]);
     setInputText("");
     playMessageSent();
@@ -339,7 +416,9 @@ export default function OracleScreen() {
           ))}
         </div>
 
-        <div className="oracle-screen__stream">
+        <div className="oracle-screen__stream-wrap">
+        <div className="oracle-screen__stream" ref={streamRef} onScroll={handleStreamScroll}>
+          <div className="oracle-screen__stream-content" ref={streamContentRef}>
           {messages.length === 0 ? (
             <div className="oracle-screen__empty">
               <OracleOrb size={52} />
@@ -411,6 +490,7 @@ export default function OracleScreen() {
                     <AvatarBadge
                       level={user.level}
                       xp={user.xp}
+                      avatarStage={user.avatarStage}
                       gender={user.gender}
                       size={30}
                       showLevel={false}
@@ -432,7 +512,15 @@ export default function OracleScreen() {
               </div>
             </div>
           )}
-          <div ref={chatEndRef} />
+          </div>
+        </div>
+
+          {showJump && messages.length > 0 && (
+            <button type="button" className="oracle-screen__jump-latest" onClick={() => scrollToBottom(true)}>
+              <ArrowDown size={13} />
+              Jump to latest
+            </button>
+          )}
         </div>
 
         <div className="oracle-screen__input-bar">

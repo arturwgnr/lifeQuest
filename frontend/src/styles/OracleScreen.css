@@ -183,13 +183,58 @@
   white-space: nowrap;
 }
 
+/* Wrapper gives the "Jump to latest" button a positioning context while the
+   stream itself stays the only scrolling element. */
+.oracle-screen__stream-wrap {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
 .oracle-screen__stream {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 1.25rem 1.1rem;
   display: flex;
   flex-direction: column;
+}
+
+/* Observed by a ResizeObserver: any height change here re-pins the view */
+.oracle-screen__stream-content {
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
   gap: 0.9rem;
+}
+
+.oracle-screen__jump-latest {
+  position: absolute;
+  left: 50%;
+  bottom: 0.75rem;
+  translate: -50% 0;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.45rem 0.85rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: white;
+  background: var(--ink);
+  border: 1px solid var(--ink-border);
+  border-radius: 999px;
+  box-shadow: 0 8px 20px -8px rgba(2, 6, 23, 0.55);
+  animation: oracleMessageIn var(--dur-base) var(--ease-out) both;
+}
+
+@media (hover: hover) {
+  .oracle-screen__jump-latest:hover {
+    background: var(--indigo-600);
+  }
 }
 
 .oracle-screen__empty {
