@@ -208,12 +208,13 @@ router.put("/logs/:date", async (req, res) => {
 router.get("/summary", async (req, res) => {
   const logs = await prisma.dailyPillarLog.findMany({
     where: { userId: req.userId },
-    include: { entries: true },
+    include: { entries: true, group: { select: { name: true } } },
     orderBy: { date: "asc" }
   });
 
   const summary = logs.map(log => ({
     date: log.date.toISOString().slice(0, 10),
+    groupName: log.group.name,
     totalCount: log.entries.length,
     completedCount: log.entries.filter(e => e.completed).length
   }));
