@@ -13,14 +13,26 @@ const {
 const router = express.Router();
 router.use(requireAuth);
 
-const MAX_HEATMAP_DAYS = 365;
+// The consistency heatmap always covers the same trailing range (aligned to a
+// Monday) regardless of the 4w/all toggle: a 4-week window rendered as a
+// contributions grid was a 4-column sliver, and an all-time one could run to
+// 52+ columns and overflow the card on phones.
+const HEATMAP_WEEKS = 26;
+
+function heatmapStartDate() {
+  const start = new Date();
+  start.setUTCHours(0, 0, 0, 0);
+  const dayOfWeek = (start.getUTCDay() + 6) % 7;
+  start.setUTCDate(start.getUTCDate() - dayOfWeek - (HEATMAP_WEEKS - 1) * 7);
+  return start;
+}
 
 router.get("/overview", async (req, res) => {
   const window = req.query.window === "4w" ? "4w" : "all";
 
   const user = await prisma.user.findUnique({ where: { id: req.userId } });
   const rawStart = windowStartFor(window, user.createdAt);
-  const heatmapStart = new Date(Math.max(rawStart.getTime(), Date.now() - MAX_HEATMAP_DAYS * DAY_MS));
+  const heatmapStart = heatmapStartDate();
 
   const tasks = await prisma.task.findMany({
     where: { userId: req.userId, createdAt: { gte: rawStart } },
@@ -32,6 +44,11 @@ router.get("/overview", async (req, res) => {
     select: { changedAt: true }
   });
   const doneDates = doneTransitions.map(t => t.changedAt);
+
+  const heatmapTransitions = await prisma.taskStatusHistory.findMany({
+    where: { status: "DONE", changedAt: { gte: heatmapStart }, task: { userId: req.userId } },
+    select: { changedAt: true }
+  });
 
   // Completion trend
   const completionTrend = bucketCompletionTrend(doneDates, window);
@@ -78,7 +95,7 @@ router.get("/overview", async (req, res) => {
   }
 
   // Streak / consistency heatmap
-  const streakHeatmap = buildStreakHeatmap(doneDates, heatmapStart);
+  const streakHeatmap = buildStreakHeatmap(heatmapTransitions.map(t => t.changedAt), heatmapStart);
 
   // Day-by-day completion history, for the history panel + "story mode" timeline
   const taskHistory = await getTaskCompletionSummary(prisma, req.userId, rawStart, new Date());
