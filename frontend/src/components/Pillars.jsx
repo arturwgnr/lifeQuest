@@ -6,6 +6,7 @@ import { useToast, errorToastFor } from "../context/ToastContext.jsx";
 import { completionRate, dayQualityLabel, pillarScaleStyle } from "../constants/pillars.js";
 import PillarsCalendar from "./PillarsCalendar.jsx";
 import LoadingIndicator from "./LoadingIndicator.jsx";
+import ConfirmModal from "./ConfirmModal.jsx";
 import "../styles/Pillars.css";
 
 // Calendar day in the user's own timezone (toISOString would roll over to
@@ -21,6 +22,16 @@ function shiftDateKey(key, days) {
   const date = new Date(`${key}T00:00:00.000Z`);
   date.setUTCDate(date.getUTCDate() + days);
   return date.toISOString().slice(0, 10);
+}
+
+function formatFullDate(key) {
+  return new Date(`${key}T00:00:00.000Z`).toLocaleDateString(undefined, {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC"
+  });
 }
 
 function monthOf(key) {
@@ -72,6 +83,10 @@ export default function Pillars() {
   const [isFetchingLog, setIsFetchingLog] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isSwitching, setIsSwitching] = useState(false);
+  const [pendingDeleteKey, setPendingDeleteKey] = useState(null);
+  const [isDeletingDay, setIsDeletingDay] = useState(false);
+  // Bumped after deleting the selected day so its (now empty) checklist reloads
+  const [logVersion, setLogVersion] = useState(0);
 
   const activeGroup = groups.find(g => g.isActive) || null;
   const logGroup = groups.find(g => g.id === logGroupId) || null;
@@ -136,7 +151,7 @@ export default function Pillars() {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedDate, isLoading, groups]);
+  }, [selectedDate, isLoading, groups, logVersion]);
 
   const toggleEntry = pillarId => {
     setChecklist(prev => prev.map(e => (e.pillarId === pillarId ? { ...e, completed: !e.completed } : e)));
@@ -164,6 +179,33 @@ export default function Pillars() {
       errorToastFor(toast, err, "Report couldn't be saved");
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  // Days without a report have nothing to delete, so they never open the modal
+  const requestDeleteDay = key => {
+    if (!summaryByDate.has(key) || isDeletingDay) return;
+    setPendingDeleteKey(key);
+  };
+
+  // Optimistic: the day drops off the calendar (and its color) immediately;
+  // a failed request puts it back. Only that day's log is removed.
+  const handleDeleteDay = async () => {
+    const key = pendingDeleteKey;
+    if (!key) return;
+    const snapshot = summary;
+    setPendingDeleteKey(null);
+    setSummary(prev => prev.filter(d => d.date !== key));
+    setIsDeletingDay(true);
+    try {
+      await api.pillars.logs.remove(key);
+      toast.info(`Report for ${formatFullDate(key)} deleted`);
+      if (key === selectedDate) setLogVersion(v => v + 1);
+    } catch (err) {
+      setSummary(snapshot);
+      errorToastFor(toast, err, "That day couldn't be deleted, so it was restored");
+    } finally {
+      setIsDeletingDay(false);
     }
   };
 
@@ -337,8 +379,35 @@ export default function Pillars() {
           selectedDate={selectedDate}
           onSelectDate={selectDate}
           todayKey={todayKey}
+          onRequestDelete={requestDeleteDay}
+          isDeleting={isDeletingDay}
         />
       </div>
+
+      {pendingDeleteKey && (
+        <ConfirmModal
+          title="Delete this day's report?"
+          message={
+            <>
+              <p>
+                <strong>{formatFullDate(pendingDeleteKey)}</strong>
+              </p>
+              <p>
+                This removes that day's pillar report and its{" "}
+                {(() => {
+                  const day = summaryByDate.get(pendingDeleteKey);
+                  return day ? `${completionRate(day.completedCount, day.totalCount)}%` : "";
+                })()}{" "}
+                completion score. Your pillar group and every other day stay untouched.
+              </p>
+              <p>This cannot be undone.</p>
+            </>
+          }
+          confirmLabel="Delete day"
+          onConfirm={handleDeleteDay}
+          onCancel={() => setPendingDeleteKey(null)}
+        />
+      )}
     </div>
   );
 }

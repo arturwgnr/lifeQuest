@@ -1,7 +1,16 @@
-import { useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
 import { completionRate, dayQualityLabel, pillarScaleStyle } from "../constants/pillars.js";
+import LoadingIndicator from "./LoadingIndicator.jsx";
 import "../styles/PillarsCalendar.css";
+
+// Two clicks/taps on the same reported day within this window count as a
+// double-click (desktop) or double-tap (touch, where dblclick is unreliable).
+const DOUBLE_TAP_MS = 300;
+// Single clicks on a reported day wait this long before selecting, so a
+// double-click never also opens the day. Short enough not to feel laggy;
+// unreported days and the already-selected day skip the wait entirely.
+const SINGLE_CLICK_DELAY_MS = 220;
 
 const WEEKDAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
@@ -35,9 +44,50 @@ function formatLongDate(key) {
 // Month grid painted with the continuous completion scale. Hover (or focus,
 // or tapping a day on touch) fills the detail strip below with the date, the
 // group used and the exact percentage, so color is never the only signal.
-export default function PillarsCalendar({ summaryByDate, month, onMonthChange, selectedDate, onSelectDate, todayKey }) {
+export default function PillarsCalendar({
+  summaryByDate,
+  month,
+  onMonthChange,
+  selectedDate,
+  onSelectDate,
+  todayKey,
+  onRequestDelete,
+  isDeleting = false
+}) {
   const [hoveredKey, setHoveredKey] = useState(null);
   const [direction, setDirection] = useState(0);
+  const lastTapRef = useRef(null);
+  const clickTimerRef = useRef(null);
+
+  useEffect(() => () => clearTimeout(clickTimerRef.current), []);
+
+  const handleCellClick = (key, hasReport) => {
+    const now = Date.now();
+    const last = lastTapRef.current;
+
+    if (hasReport && last && last.key === key && now - last.time < DOUBLE_TAP_MS) {
+      clearTimeout(clickTimerRef.current);
+      lastTapRef.current = null;
+      onRequestDelete(key);
+      return;
+    }
+
+    lastTapRef.current = { key, time: now };
+    clearTimeout(clickTimerRef.current);
+    if (!hasReport || key === selectedDate) {
+      onSelectDate(key);
+      return;
+    }
+    clickTimerRef.current = setTimeout(() => onSelectDate(key), SINGLE_CLICK_DELAY_MS);
+  };
+
+  // Keyboard path to the same action: Delete/Backspace on a focused day
+  const handleCellKeyDown = (e, key, hasReport) => {
+    if (hasReport && (e.key === "Delete" || e.key === "Backspace")) {
+      e.preventDefault();
+      onRequestDelete(key);
+    }
+  };
   const cells = buildMonthGrid(month);
   const monthLabel = month.toLocaleDateString(undefined, { month: "long", year: "numeric", timeZone: "UTC" });
   const monthKey = `${month.getUTCFullYear()}-${month.getUTCMonth()}`;
@@ -58,7 +108,8 @@ export default function PillarsCalendar({ summaryByDate, month, onMonthChange, s
   const detailRate = detailDay ? completionRate(detailDay.completedCount, detailDay.totalCount) : null;
 
   return (
-    <div className="pillars-calendar">
+    <div className="pillars-calendar" aria-busy={isDeleting}>
+      {isDeleting && <LoadingIndicator variant="overlay" size="sm" label="Deleting day..." />}
       <div className="pillars-calendar__header">
         <h4>{monthLabel}</h4>
         <div className="pillars-calendar__nav">
@@ -106,7 +157,8 @@ export default function PillarsCalendar({ summaryByDate, month, onMonthChange, s
             <button
               key={idx}
               type="button"
-              onClick={() => onSelectDate(key)}
+              onClick={() => handleCellClick(key, Boolean(day))}
+              onKeyDown={e => handleCellKeyDown(e, key, Boolean(day))}
               onMouseEnter={() => setHoveredKey(key)}
               onFocus={() => setHoveredKey(key)}
               onBlur={() => setHoveredKey(null)}
@@ -140,6 +192,19 @@ export default function PillarsCalendar({ summaryByDate, month, onMonthChange, s
           </span>
         </div>
         <span className="pillars-calendar__detail-label">{dayQualityLabel(detailRate)}</span>
+        {detailDay && (
+          <button
+            type="button"
+            className="pillars-calendar__delete"
+            onClick={() => onRequestDelete(detailKey)}
+            disabled={isDeleting}
+            aria-label={`Delete report for ${formatLongDate(detailKey)}`}
+            title="Delete this day's report"
+          >
+            <Trash2 size={14} />
+            <span>Delete day</span>
+          </button>
+        )}
       </div>
 
       <div className="pillars-calendar__footer">

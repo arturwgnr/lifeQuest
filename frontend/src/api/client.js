@@ -84,7 +84,8 @@ export const api = {
     logs: {
       list: month => request(`/pillars/logs?month=${month}`),
       get: date => request(`/pillars/logs/${date}`),
-      upsert: (date, body) => request(`/pillars/logs/${date}`, { method: "PUT", body: JSON.stringify(body) })
+      upsert: (date, body) => request(`/pillars/logs/${date}`, { method: "PUT", body: JSON.stringify(body) }),
+      remove: date => request(`/pillars/logs/${date}`, { method: "DELETE" })
     },
     summary: () => request("/pillars/summary")
   }

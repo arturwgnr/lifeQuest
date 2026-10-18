@@ -205,6 +205,23 @@ router.put("/logs/:date", async (req, res) => {
   res.json({ log: fullLog });
 });
 
+// Deletes one day's report (the log and its entries) and nothing else: the
+// pillar group and every other day are untouched. Scoped by userId, so a
+// date can only ever match the caller's own log.
+router.delete("/logs/:date", async (req, res) => {
+  const date = parseDateParam(req.params.date);
+  if (!date) return res.status(400).json({ error: "date must be YYYY-MM-DD" });
+
+  try {
+    const result = await prisma.dailyPillarLog.deleteMany({ where: { userId: req.userId, date } });
+    if (result.count === 0) return res.status(404).json({ error: "No report for this day" });
+    res.status(204).end();
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Report could not be deleted" });
+  }
+});
+
 router.get("/summary", async (req, res) => {
   const logs = await prisma.dailyPillarLog.findMany({
     where: { userId: req.userId },

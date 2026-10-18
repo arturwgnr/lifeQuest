@@ -102,3 +102,41 @@
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+.confirm-modal:focus {
+  outline: none;
+}
+
+.confirm-modal__message p {
+  margin: 0 0 0.6rem;
+}
+
+.confirm-modal__message p:last-child {
+  margin-bottom: 0;
+}
+
+.confirm-modal__message strong {
+  color: var(--stone-900);
+}
+
+.confirm-modal__cancel,
+.confirm-modal__confirm {
+  min-height: 2.5rem;
+  min-width: 7rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Phones: both actions full width, Cancel on top, equally easy to hit */
+@media (max-width: 480px) {
+  .confirm-modal__actions {
+    flex-direction: column;
+  }
+
+  .confirm-modal__cancel,
+  .confirm-modal__confirm {
+    width: 100%;
+    min-height: 2.875rem;
+  }
+}

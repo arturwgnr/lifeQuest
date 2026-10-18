@@ -393,3 +393,63 @@
     transform: none;
   }
 }
+
+/* ---------- Delete day ---------- */
+
+.pillars-calendar {
+  position: relative;
+}
+
+/* Double-tap deletes on touch, so the browser must not treat it as zoom */
+.pillars-calendar__cell {
+  touch-action: manipulation;
+}
+
+.pillars-calendar__delete {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex-shrink: 0;
+  min-height: 2rem;
+  padding: 0.3rem 0.6rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--slate-500);
+  background: var(--surface);
+  border: 1px solid var(--slate-200);
+  border-radius: 0.6rem;
+}
+
+.pillars-calendar__delete:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (hover: hover) {
+  .pillars-calendar__delete:not(:disabled):hover {
+    color: var(--hover-danger);
+    background: var(--hover-danger-bg);
+    border-color: var(--hover-danger-border);
+  }
+}
+
+/* Phones: the strip wraps, quality label + delete action share the second row */
+@media (max-width: 640px) {
+  .pillars-calendar__detail {
+    flex-wrap: wrap;
+  }
+
+  .pillars-calendar__detail-text {
+    flex-basis: calc(100% - 2.75rem);
+  }
+
+  .pillars-calendar__detail-label {
+    margin-left: 2.5rem;
+  }
+
+  .pillars-calendar__delete {
+    margin-left: auto;
+    min-height: 2.5rem;
+    padding: 0.4rem 0.8rem;
+  }
+}
