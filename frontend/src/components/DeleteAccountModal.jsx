@@ -23,7 +23,8 @@ export default function DeleteAccountModal({ onClose }) {
   const passwordRef = useRef(null);
 
   const firstName = user.name.trim().split(/\s+/)[0];
-  const phraseMatches = phrase.trim() === "DELETE" || phrase.trim() === user.name.trim();
+  const phraseMatches =
+    phrase.trim() === "DELETE" || phrase.trim() === user.name.trim();
   const canDelete = password.length > 0 && phraseMatches && !isDeleting;
 
   useEffect(() => {
@@ -31,14 +32,14 @@ export default function DeleteAccountModal({ onClose }) {
   }, [step]);
 
   useEffect(() => {
-    const onKey = e => {
+    const onKey = (e) => {
       if (e.key === "Escape" && !isDeleting) onClose();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [isDeleting, onClose]);
 
-  const handleDelete = async e => {
+  const handleDelete = async (e) => {
     e.preventDefault();
     if (!canDelete) return;
     setErrors({});
@@ -48,70 +49,113 @@ export default function DeleteAccountModal({ onClose }) {
       navigate("/", { replace: true });
       toast.info("Your account was deleted", {
         description: `Everything is gone for good. Safe travels, ${firstName}.`,
-        duration: 8000
+        duration: 8000,
       });
     } catch (err) {
       setIsDeleting(false);
       if (err.data?.field === "password") {
-        setErrors({ password: "That password isn't right. Nothing was deleted." });
+        setErrors({
+          password: "That password isn't right. Nothing was deleted.",
+        });
       } else if (err.data?.field === "confirmation") {
         setErrors({ phrase: "The phrase doesn't match. Nothing was deleted." });
       } else if (err instanceof TypeError) {
-        setErrors({ form: "Network error. Nothing was deleted, check your connection and try again." });
+        setErrors({
+          form: "Network error. Nothing was deleted, check your connection and try again.",
+        });
       } else {
-        setErrors({ form: err.message || "Something went wrong. Nothing was deleted." });
+        setErrors({
+          form: err.message || "Something went wrong. Nothing was deleted.",
+        });
       }
     }
   };
 
   return (
-    <div className="modal-backdrop animate-fade-in" onMouseDown={e => e.target === e.currentTarget && !isDeleting && onClose()}>
-      <div className="delete-account" role="dialog" aria-modal="true" aria-labelledby="delete-account-title">
-        <button type="button" className="delete-account__close" onClick={onClose} disabled={isDeleting} aria-label="Close">
+    <div
+      className="modal-backdrop animate-fade-in"
+      onMouseDown={(e) =>
+        e.target === e.currentTarget && !isDeleting && onClose()
+      }
+    >
+      <div
+        className="delete-account"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="delete-account-title"
+      >
+        <button
+          type="button"
+          className="delete-account__close"
+          onClick={onClose}
+          disabled={isDeleting}
+          aria-label="Close"
+        >
           <X size={18} />
         </button>
 
         {step === "farewell" ? (
           <>
             <div className="delete-account__hero">
-              <img src="/img/mascot.png" alt="" className="delete-account__mascot" />
+              <img
+                src="/img/mascot.png"
+                alt=""
+                className="delete-account__mascot"
+              />
             </div>
-            <h2 id="delete-account-title">Wait, {firstName}, you&apos;re leaving the party?</h2>
+            <h2 id="delete-account-title">
+              Wait, you&apos;re leaving the Quest?!
+            </h2>
             <p className="delete-account__lead">
-              The quest log will be a much quieter place without someone like {firstName}. The Oracle is already
-              drafting a sad little haiku about it.
+              This place will be much quieter without someone like you,{" "}
+              {firstName}... The Oracle has witnessed countless endings, but
+              yours shall echo through eternity.
             </p>
             <p className="delete-account__lead">
-              No pressure though. If it&apos;s time, it&apos;s time, and we&apos;ll make it clean.
+              The universe keeps no record of those who leave.
             </p>
 
             <div className="delete-account__warning">
               <AlertTriangle size={16} />
               <p>
-                <strong>This cannot be undone.</strong> Your quests, chains, categories, Oracle conversations, pillars,
-                journal entries, status history, XP and avatar are permanently deleted.
+                <strong>This cannot be undone.</strong> Your quests, chains,
+                categories, Oracle conversations, pillars, journal entries,
+                status history, XP and avatar are permanently deleted.
               </p>
             </div>
 
             <div className="delete-account__actions">
-              <button type="button" className="delete-account__cancel" onClick={onClose}>
+              <button
+                type="button"
+                className="delete-account__cancel"
+                onClick={onClose}
+              >
                 Stay, I&apos;ll keep questing
               </button>
-              <button type="button" className="delete-account__continue" onClick={() => setStep("confirm")}>
+              <button
+                type="button"
+                className="delete-account__continue"
+                onClick={() => setStep("confirm")}
+              >
                 Continue to delete
               </button>
             </div>
           </>
         ) : (
           <form onSubmit={handleDelete} noValidate>
-            <span className="delete-account__step">Step 2 of 2 · Confirm it&apos;s really you</span>
+            <span className="delete-account__step">
+              Step 2 of 2 · Confirm it&apos;s really you
+            </span>
             <h2 id="delete-account-title">Permanently delete your account</h2>
             <p className="delete-account__lead">
-              Enter your password and type <code>DELETE</code> (or your account name, <code>{user.name}</code>) to unlock the
-              final button. This cannot be undone.
+              Enter your password and type <code>DELETE</code> (or your account
+              name, <code>{user.name}</code>) to unlock the final button. This
+              cannot be undone.
             </p>
 
-            <div className={`delete-account__field${errors.password ? " delete-account__field--error" : ""}`}>
+            <div
+              className={`delete-account__field${errors.password ? " delete-account__field--error" : ""}`}
+            >
               <label htmlFor="delete-password">Current password</label>
               <div className="delete-account__input">
                 <Lock size={15} />
@@ -120,37 +164,45 @@ export default function DeleteAccountModal({ onClose }) {
                   ref={passwordRef}
                   type={showPassword ? "text" : "password"}
                   value={password}
-                  onChange={e => setPassword(e.target.value)}
+                  onChange={(e) => setPassword(e.target.value)}
                   autoComplete="current-password"
                   disabled={isDeleting}
                 />
                 <button
                   type="button"
                   className="delete-account__reveal"
-                  onClick={() => setShowPassword(v => !v)}
+                  onClick={() => setShowPassword((v) => !v)}
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
                   {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
                 </button>
               </div>
-              {errors.password && <p className="delete-account__error">{errors.password}</p>}
+              {errors.password && (
+                <p className="delete-account__error">{errors.password}</p>
+              )}
             </div>
 
-            <div className={`delete-account__field${errors.phrase ? " delete-account__field--error" : ""}`}>
-              <label htmlFor="delete-phrase">Type DELETE or your account name</label>
+            <div
+              className={`delete-account__field${errors.phrase ? " delete-account__field--error" : ""}`}
+            >
+              <label htmlFor="delete-phrase">
+                Type DELETE or your account name
+              </label>
               <div className="delete-account__input">
                 <input
                   id="delete-phrase"
                   type="text"
                   value={phrase}
-                  onChange={e => setPhrase(e.target.value)}
+                  onChange={(e) => setPhrase(e.target.value)}
                   autoComplete="off"
                   spellCheck={false}
                   disabled={isDeleting}
                   placeholder="DELETE"
                 />
               </div>
-              {errors.phrase && <p className="delete-account__error">{errors.phrase}</p>}
+              {errors.phrase && (
+                <p className="delete-account__error">{errors.phrase}</p>
+              )}
             </div>
 
             {errors.form && (
@@ -161,11 +213,28 @@ export default function DeleteAccountModal({ onClose }) {
             )}
 
             <div className="delete-account__actions">
-              <button type="button" className="delete-account__cancel" onClick={onClose} disabled={isDeleting}>
+              <button
+                type="button"
+                className="delete-account__cancel"
+                onClick={onClose}
+                disabled={isDeleting}
+              >
                 Cancel, keep my account
               </button>
-              <button type="submit" className="delete-account__destroy" disabled={!canDelete}>
-                {isDeleting ? <LoadingIndicator size="sm" tone="light" label="Deleting..." /> : "Permanently delete account"}
+              <button
+                type="submit"
+                className="delete-account__destroy"
+                disabled={!canDelete}
+              >
+                {isDeleting ? (
+                  <LoadingIndicator
+                    size="sm"
+                    tone="light"
+                    label="Deleting..."
+                  />
+                ) : (
+                  "Permanently delete account"
+                )}
               </button>
             </div>
           </form>
