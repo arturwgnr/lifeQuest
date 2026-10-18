@@ -1,0 +1,46 @@
+.brand-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.brand-mark__tile {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 28%;
+}
+
+.brand-mark--ink .brand-mark__tile {
+  background: var(--ink);
+  color: #f8fafc;
+  box-shadow: 0 6px 16px -6px rgba(15, 23, 42, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.brand-mark--amber .brand-mark__tile {
+  background: var(--amber-500);
+  color: var(--ink);
+  box-shadow: 0 6px 16px -6px rgba(217, 119, 6, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+.brand-mark__name {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: -0.01em;
+  color: var(--slate-900);
+}
+
+.brand-mark--amber .brand-mark__name {
+  color: #fff;
+}
+
+.brand-mark__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}

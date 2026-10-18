@@ -1,31 +1,27 @@
-import { useEffect } from "react";
-import { Sparkles, Trophy } from "lucide-react";
-import "../styles/LevelUpNotification.css";
+import { useEffect, useRef } from "react";
+import { Trophy } from "lucide-react";
+import { useToast } from "../context/ToastContext.jsx";
+import { AVATAR_STAGES, stageForLevel } from "../constants/avatarStages.js";
 
+// Level-ups go through the shared toast stack (so they never overlap other
+// toasts). Kept as a component with the same props so callers don't change.
 export default function LevelUpNotification({ level, onClose }) {
+  const toast = useToast();
+  const shownRef = useRef(null);
+
   useEffect(() => {
-    const timer = setTimeout(onClose, 5000);
-    return () => clearTimeout(timer);
-  }, [onClose]);
+    if (shownRef.current === level) return;
+    shownRef.current = level;
+    const stage = stageForLevel(level);
+    const isNewStage = stage.minLevel === level && stage.stage > 1;
+    toast.level(`Reached Level ${level}!`, {
+      icon: Trophy,
+      description: isNewStage
+        ? `Your avatar evolved into ${stage.name} (stage ${stage.stage} of ${AVATAR_STAGES.length}).`
+        : "Your avatar's ring is filling up. Steady progress."
+    });
+    onClose();
+  }, [level, onClose, toast]);
 
-  return (
-    <div className="level-up animate-slide-in-up">
-      <div className="level-up__icon">
-        <Trophy size={20} />
-      </div>
-
-      <div className="level-up__body">
-        <div className="level-up__eyebrow">
-          <Sparkles size={14} />
-          LEVEL ADVANCEMENT
-        </div>
-        <h4 className="level-up__title">Reached Level {level}!</h4>
-        <p className="level-up__copy">Your chronicle sentinel has upgraded. Your productivity remains steady and clear.</p>
-      </div>
-
-      <button type="button" className="level-up__dismiss" onClick={onClose}>
-        Dismiss
-      </button>
-    </div>
-  );
+  return null;
 }

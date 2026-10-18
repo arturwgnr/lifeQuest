@@ -1,63 +1,168 @@
 .loading-indicator {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
+}
+
+.loading-indicator__pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
 }
 
 .loading-indicator--panel {
   width: 100%;
-  padding: 2.5rem 1rem;
-  flex-direction: column;
+  padding: 3rem 1rem;
   justify-content: center;
 }
 
-.loading-indicator__spinner {
-  display: inline-block;
-  border-radius: 50%;
-  border: 2px solid var(--indigo-100);
-  border-top-color: var(--violet-600);
-  animation: spin 0.7s linear infinite;
+.loading-indicator--panel .loading-indicator__pill {
+  flex-direction: column;
+  gap: 0.9rem;
 }
 
-[data-theme="dark"] .loading-indicator__spinner {
-  border-color: var(--slate-300);
-  border-top-color: var(--indigo-400);
+/* Overlay: content underneath stays mounted and visible (dimmed by the
+   parent if it wants), the pill floats over it. */
+.loading-indicator--overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 1rem;
+  pointer-events: none;
+  animation: loadingFade var(--dur-base) var(--ease-out) both;
+}
+
+.loading-indicator--overlay .loading-indicator__pill {
+  position: sticky;
+  top: 1rem;
+  padding: 0.5rem 0.9rem 0.5rem 0.65rem;
+  background: var(--ink);
+  border: 1px solid var(--ink-border);
+  border-radius: 999px;
+  box-shadow: 0 10px 28px -10px rgba(2, 6, 23, 0.5);
+}
+
+.loading-indicator--overlay .loading-indicator__label {
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 600;
+  animation: none;
+}
+
+/* Conic-gradient ring masked into a thin stroke, with a soft glow dot that
+   orbits it: reads as "working" without the flat look of a border spinner. */
+.loading-indicator__spinner {
+  position: relative;
+  display: inline-block;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: conic-gradient(from 90deg, transparent 0deg, var(--indigo-500) 220deg, var(--violet-500) 360deg);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - var(--ring, 2px)), #000 calc(100% - var(--ring, 2px)));
+  mask: radial-gradient(farthest-side, transparent calc(100% - var(--ring, 2px)), #000 calc(100% - var(--ring, 2px)));
+  animation: spin 0.8s linear infinite;
+}
+
+/* Sits at 3 o'clock, where the conic gradient peaks (it starts at 90deg) */
+.loading-indicator__orbit {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  width: var(--ring, 2px);
+  height: var(--ring, 2px);
+  margin-top: calc(var(--ring, 2px) / -2);
+  border-radius: 50%;
+  background: var(--violet-500);
+}
+
+.loading-indicator--overlay .loading-indicator__spinner {
+  background: conic-gradient(from 90deg, transparent 0deg, var(--indigo-400) 220deg, #c4b5fd 360deg);
 }
 
 .loading-indicator--sm .loading-indicator__spinner {
-  width: 0.875rem;
-  height: 0.875rem;
-  border-width: 2px;
+  width: 0.9rem;
+  height: 0.9rem;
+  --ring: 2px;
 }
 
 .loading-indicator--md .loading-indicator__spinner {
   width: 1.25rem;
   height: 1.25rem;
-  border-width: 2px;
+  --ring: 2.5px;
 }
 
 .loading-indicator--lg .loading-indicator__spinner {
-  width: 2rem;
-  height: 2rem;
-  border-width: 3px;
+  width: 2.25rem;
+  height: 2.25rem;
+  --ring: 3px;
+}
+
+[data-theme="dark"] .loading-indicator__spinner {
+  background: conic-gradient(from 90deg, transparent 0deg, var(--indigo-400) 220deg, #c4b5fd 360deg);
 }
 
 .loading-indicator__label {
   color: var(--slate-500);
-  font-size: 0.875rem;
-  animation: pulse 1.6s ease-in-out infinite;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  animation: loadingBreathe 1.8s ease-in-out infinite;
 }
 
 .loading-indicator--panel .loading-indicator__label {
-  font-size: 0.9375rem;
+  font-size: 0.875rem;
+  font-family: var(--font-mono);
+  letter-spacing: 0.01em;
 }
 
+.loading-indicator__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@keyframes loadingBreathe {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@keyframes loadingFade {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Reduced motion: a static ring still says "busy" without spinning */
 @media (prefers-reduced-motion: reduce) {
-  .loading-indicator__spinner {
-    animation: none;
-    border-top-color: var(--indigo-100);
-  }
-  .loading-indicator__label {
+  .loading-indicator__spinner,
+  .loading-indicator__label,
+  .loading-indicator--overlay {
     animation: none;
   }
+}
+
+/* On ink/filled buttons */
+.loading-indicator--light .loading-indicator__spinner {
+  background: conic-gradient(from 90deg, transparent 0deg, rgba(255, 255, 255, 0.55) 220deg, #fff 360deg);
+}
+
+.loading-indicator--light .loading-indicator__orbit {
+  background: #fff;
+}
+
+.loading-indicator--light .loading-indicator__label {
+  color: inherit;
+  animation: none;
 }
