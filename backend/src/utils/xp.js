@@ -4,12 +4,16 @@ function levelForXp(xp) {
   return Math.floor(xp / XP_PER_LEVEL) + 1;
 }
 
+// Seven avatar stages keyed by level. Mirrors frontend/src/constants/avatarStages.js;
+// level only ever goes up, so the stage is monotonic too.
+const AVATAR_STAGE_MIN_LEVELS = [1, 3, 5, 8, 12, 17, 24];
+
 function avatarStageForLevel(level) {
-  if (level >= 9) return 5;
-  if (level >= 7) return 4;
-  if (level >= 5) return 3;
-  if (level >= 3) return 2;
-  return 1;
+  let stage = 1;
+  AVATAR_STAGE_MIN_LEVELS.forEach((min, idx) => {
+    if (level >= min) stage = idx + 1;
+  });
+  return stage;
 }
 
 function applyXpGain(user, xpGained) {
@@ -23,4 +27,4 @@ function applyXpGain(user, xpGained) {
   };
 }
 
-module.exports = { XP_PER_LEVEL, levelForXp, avatarStageForLevel, applyXpGain };
+module.exports = { XP_PER_LEVEL, AVATAR_STAGE_MIN_LEVELS, levelForXp, avatarStageForLevel, applyXpGain };

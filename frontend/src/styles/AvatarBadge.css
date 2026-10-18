@@ -1,4 +1,19 @@
+/* Avatar palette is fixed per stage (not the invertible slate ramp) so the
+   avatar is the same illustration in the sidebar, Profile, Oracle and in
+   both themes. Each stage shifts hue AND adds gear, so every step reads as
+   an upgrade even at sidebar size. */
 .avatar-badge {
+  --av-bg-1: #f1f5f9;
+  --av-bg-2: #d5dde8;
+  --av-body: #9aa8bb;
+  --av-head: #b2bfcf;
+  --av-hair: #7d8ca1;
+  --av-accent: #64748b;
+  --av-accent-2: #cbd5e1;
+  --av-ring-1: #94a3b8;
+  --av-ring-2: #64748b;
+  --av-track: rgba(148, 163, 184, 0.35);
+
   position: relative;
   display: flex;
   align-items: center;
@@ -7,113 +22,248 @@
   flex-shrink: 0;
 }
 
+.avatar-badge--apprentice {
+  --av-bg-1: #eaf6fe;
+  --av-bg-2: #b9e0f7;
+  --av-body: #73869d;
+  --av-head: #93a5ba;
+  --av-hair: #5b6d84;
+  --av-accent: #0284c7;
+  --av-accent-2: #7dd3fc;
+  --av-ring-1: #38bdf8;
+  --av-ring-2: #0284c7;
+}
+
+.avatar-badge--initiate {
+  --av-bg-1: #e8f8f0;
+  --av-bg-2: #aee3cb;
+  --av-body: #627589;
+  --av-head: #8597ab;
+  --av-hair: #4b5d72;
+  --av-accent: #059669;
+  --av-accent-2: #6ee7b7;
+  --av-ring-1: #34d399;
+  --av-ring-2: #059669;
+}
+
+.avatar-badge--pathfinder {
+  --av-bg-1: #eceefe;
+  --av-bg-2: #bfc6f7;
+  --av-body: #53637a;
+  --av-head: #7c8ea4;
+  --av-hair: #3e4c61;
+  --av-accent: #4f46e5;
+  --av-accent-2: #a5b4fc;
+  --av-ring-1: #818cf8;
+  --av-ring-2: #4f46e5;
+}
+
+.avatar-badge--vanguard {
+  --av-bg-1: #f2ebfe;
+  --av-bg-2: #c4adf4;
+  --av-body: #48566d;
+  --av-head: #76879d;
+  --av-hair: #353f52;
+  --av-accent: #7c3aed;
+  --av-accent-2: #ddd6fe;
+  --av-ring-1: #a78bfa;
+  --av-ring-2: #6d28d9;
+}
+
+.avatar-badge--champion {
+  --av-bg-1: #fef6e4;
+  --av-bg-2: #f4cf7f;
+  --av-body: #3f4b5f;
+  --av-head: #6f8096;
+  --av-hair: #2d3646;
+  --av-accent: #d97706;
+  --av-accent-2: #fde68a;
+  --av-ring-1: #fbbf24;
+  --av-ring-2: #d97706;
+}
+
+.avatar-badge--sovereign {
+  --av-bg-1: #4338ca;
+  --av-bg-2: #1e1b4b;
+  --av-body: #c7d2fe;
+  --av-head: #e0e7ff;
+  --av-hair: #a5b4fc;
+  --av-accent: #f59e0b;
+  --av-accent-2: #fde68a;
+  --av-ring-1: #fcd34d;
+  --av-ring-2: #818cf8;
+}
+
 .avatar-badge__svg {
   width: 100%;
   height: 100%;
-  filter: drop-shadow(var(--shadow-sm));
+  overflow: visible;
+  filter: drop-shadow(0 1px 2px rgba(15, 23, 42, 0.12));
 }
 
-.avatar-badge__backdrop {
-  fill: var(--slate-50);
+/* Every SVG part fades between stages instead of snapping on level-up */
+.avatar-badge__svg * {
+  transition: fill var(--dur-slow, 360ms) ease, stroke var(--dur-slow, 360ms) ease;
+}
+
+.avatar-badge__bg-stop-1 {
+  stop-color: var(--av-bg-1);
+}
+
+.avatar-badge__bg-stop-2 {
+  stop-color: var(--av-bg-2);
+}
+
+.avatar-badge__ring-stop-1 {
+  stop-color: var(--av-ring-1);
+}
+
+.avatar-badge__ring-stop-2 {
+  stop-color: var(--av-ring-2);
 }
 
 .avatar-badge__track {
   fill: none;
-  stroke: var(--slate-200);
-  stroke-width: 1.5;
+  stroke: var(--av-track);
+  stroke-width: 3;
 }
 
 .avatar-badge__progress {
-  transition: stroke-dashoffset 1s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.avatar-badge__accent-line {
-  stroke: var(--slate-400);
-  stroke-width: 2;
-}
-
-.avatar-badge__wings {
-  color: var(--amber-500);
-  opacity: 0.2;
-  stroke: currentColor;
-  stroke-width: 1.5;
   fill: none;
+  stroke-width: 3;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 1s var(--ease-out, cubic-bezier(0.23, 1, 0.32, 1));
 }
 
-.avatar-badge__halo-lines {
-  color: var(--indigo-400);
-  opacity: 0.4;
-  stroke: currentColor;
+.avatar-badge__mark {
+  fill: var(--av-accent);
+  stroke: #fff;
+  stroke-width: 0.8;
+}
+
+.avatar-badge__inner-ring {
+  fill: none;
+  stroke: var(--av-accent);
   stroke-width: 1;
-  fill: none;
+  opacity: 0.45;
 }
 
-.avatar-badge__silhouette {
-  fill: var(--slate-400);
+.avatar-badge__body {
+  fill: var(--av-body);
 }
 
-.avatar-badge__collar,
-.avatar-badge__cowl {
+.avatar-badge__head {
+  fill: var(--av-head);
+}
+
+.avatar-badge__hair {
+  fill: var(--av-hair);
+}
+
+.avatar-badge__scarf {
+  fill: var(--av-accent);
+}
+
+.avatar-badge__sigil {
+  fill: var(--av-accent-2);
+  stroke: var(--av-accent);
+  stroke-width: 1;
+}
+
+.avatar-badge__pauldron {
+  fill: var(--av-accent);
+  stroke: var(--av-accent-2);
+  stroke-width: 0.8;
+}
+
+.avatar-badge__circlet {
   fill: none;
+  stroke: var(--av-accent);
+  stroke-width: 2.4;
   stroke-linecap: round;
 }
 
-.avatar-badge__collar {
-  stroke: #64748b;
-  stroke-width: 2.5;
+.avatar-badge__gem {
+  fill: var(--av-accent-2);
+  stroke: var(--av-accent);
+  stroke-width: 0.9;
 }
 
-.avatar-badge__cowl {
-  stroke: #475569;
-  stroke-width: 3.5;
+.avatar-badge--sovereign .avatar-badge__gem {
+  fill: #f43f5e;
+  stroke: #fde68a;
 }
 
 .avatar-badge__crown {
-  fill: #d97706;
-  animation: pulse 2.5s ease-in-out infinite;
+  fill: #f2b632;
+  stroke: #b45309;
+  stroke-width: 1;
+  stroke-linejoin: round;
 }
 
-.avatar-badge__aura {
+.avatar-badge__laurels {
+  fill: #d4a017;
+  stroke: #a16207;
+  stroke-width: 0.6;
+}
+
+.avatar-badge__laurels path {
   fill: none;
-  stroke: #6366f1;
-  stroke-width: 3;
-  stroke-dasharray: 4 4;
-  transform-origin: 50px 40px;
-  animation: spin 12s linear infinite;
+  stroke: #a16207;
+  stroke-width: 1.2;
+}
+
+.avatar-badge__starfield {
+  transform-origin: 50px 50px;
+  animation: spin 40s linear infinite;
+}
+
+.avatar-badge__aura-ring {
+  fill: none;
+  stroke: #fcd34d;
+  stroke-width: 0.8;
+  stroke-dasharray: 1.5 3;
+  opacity: 0.85;
+}
+
+.avatar-badge__star {
+  fill: #fde68a;
 }
 
 .avatar-badge__level {
   position: absolute;
-  bottom: -0.25rem;
-  right: -0.25rem;
+  bottom: -0.2rem;
+  right: -0.3rem;
   padding: 0.05rem 0.35rem;
   border-radius: 999px;
-  border: 1px solid;
   font-family: var(--font-mono);
   font-size: 9px;
   font-weight: 700;
-  line-height: 1.4;
+  line-height: 1.45;
   white-space: nowrap;
-  background: var(--amber-50);
-  color: var(--amber-700);
-  border-color: rgba(180, 83, 9, 0.4);
+  color: var(--av-ring-2);
+  background: #fff;
+  border: 1px solid color-mix(in srgb, var(--av-ring-2) 40%, transparent);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.15);
 }
 
-.avatar-badge__level--sovereign {
-  background: var(--indigo-50);
-  color: var(--indigo-500);
-  border-color: rgba(99, 102, 241, 0.4);
+.avatar-badge--sovereign .avatar-badge__level {
+  color: #fde68a;
+  background: #1e1b4b;
+  border-color: rgba(252, 211, 77, 0.55);
 }
 
-.avatar-badge__level--champion {
-  background: rgba(254, 243, 199, 0.5);
-  color: var(--amber-600);
-  border-color: rgba(217, 119, 6, 0.4);
+/* Teaser for a stage not reached yet: recognisable shape, muted color */
+.avatar-badge--locked .avatar-badge__svg {
+  filter: grayscale(0.85) opacity(0.55);
 }
 
-.avatar-badge__level--pathfinder,
-.avatar-badge__level--initiate {
-  background: var(--slate-50);
-  color: var(--slate-600);
-  border-color: rgba(100, 116, 139, 0.4);
+.avatar-badge--locked .avatar-badge__starfield {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .avatar-badge__starfield {
+    animation: none;
+  }
 }

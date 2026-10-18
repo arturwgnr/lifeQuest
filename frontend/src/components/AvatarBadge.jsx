@@ -1,83 +1,181 @@
+import { useId } from "react";
+import { AVATAR_STAGES, stageForLevel } from "../constants/avatarStages.js";
 import "../styles/AvatarBadge.css";
 
-const TIERS = [
-  { min: 9, ring: "sovereign", label: "Sovereign", group: 5, stroke: "#6366f1" },
-  { min: 7, ring: "champion", label: "Champion", group: 4, stroke: "#d97706" },
-  { min: 5, ring: "pathfinder", label: "Pathfinder", group: 3, stroke: "#475569" },
-  { min: 3, ring: "initiate", label: "Initiate", group: 2, stroke: "#64748b" },
-  { min: 0, ring: "novice", label: "Novice", group: 1, stroke: "#64748b" }
-];
+const RING_RADIUS = 45.5;
+const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
 
-function tierForLevel(level) {
-  return TIERS.find(t => level >= t.min);
+// Gender only changes the silhouette (shoulder width + hair), never the
+// stage gear, so every variant evolves through the same visible steps.
+const BODY_SCALE = { MASCULINE: 1.14, FEMININE: 0.9, NEUTRAL: 1 };
+
+const MARK_ANGLES = [45, 135, 225, 315];
+const STAR_ANGLES = [0, 90, 180, 270];
+
+function polar(angleDeg, radius) {
+  const rad = ((angleDeg - 90) * Math.PI) / 180;
+  return [50 + radius * Math.cos(rad), 50 + radius * Math.sin(rad)];
 }
 
-export default function AvatarBadge({ level, xp, size = 56 }) {
-  const tier = tierForLevel(level);
-  const circumference = 257.6;
-  const progress = ((xp % 100) / 100) * circumference;
+// One SVG used everywhere the avatar appears (sidebar, Profile, Oracle,
+// Register preview), so it renders identically in every place. Colors are
+// fixed per stage, not theme tokens, so it is the same illustration in light
+// and dark mode too. `stage` overrides the level-derived stage (previews).
+export default function AvatarBadge({
+  level = 1,
+  xp = 0,
+  size = 56,
+  gender = "NEUTRAL",
+  stage: stageOverride,
+  locked = false,
+  showLevel = true,
+  showProgress = true
+}) {
+  const uid = useId().replace(/:/g, "");
+  const stage = stageOverride ? AVATAR_STAGES[stageOverride - 1] : stageForLevel(level);
+  const n = stage.stage;
+  const bodyScale = BODY_SCALE[gender] || 1;
+  const progress = showProgress && !locked ? ((xp % 100) / 100) * RING_CIRCUMFERENCE : 0;
+
+  const clipId = `av-clip-${uid}`;
+  const bgId = `av-bg-${uid}`;
+  const haloId = `av-halo-${uid}`;
+  const ringId = `av-ring-${uid}`;
 
   return (
-    <div className="avatar-badge" style={{ width: size, height: size }}>
-      <svg viewBox="0 0 100 100" className="avatar-badge__svg">
-        <circle cx="50" cy="50" r="44" className="avatar-badge__backdrop" />
-        <circle cx="50" cy="50" r="41" className="avatar-badge__track" />
-        <circle
-          cx="50"
-          cy="50"
-          r="41"
-          fill="none"
-          stroke={tier.stroke}
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeDasharray={circumference}
-          strokeDashoffset={circumference - progress}
-          transform="rotate(-90 50 50)"
-          className="avatar-badge__progress"
-        />
+    <div
+      className={`avatar-badge avatar-badge--${stage.key}${locked ? " avatar-badge--locked" : ""}`}
+      style={{ width: size, height: size }}
+      role="img"
+      aria-label={locked ? `${stage.name} stage (locked)` : `${stage.name} avatar, level ${level}`}
+    >
+      <svg viewBox="0 0 100 100" className="avatar-badge__svg" aria-hidden="true">
+        <defs>
+          <clipPath id={clipId}>
+            <circle cx="50" cy="50" r="40" />
+          </clipPath>
+          <radialGradient id={bgId} cx="50%" cy="35%" r="75%">
+            <stop offset="0%" className="avatar-badge__bg-stop-1" />
+            <stop offset="100%" className="avatar-badge__bg-stop-2" />
+          </radialGradient>
+          <radialGradient id={haloId}>
+            <stop offset="0%" stopColor="#fde68a" stopOpacity="0.95" />
+            <stop offset="100%" stopColor="#fde68a" stopOpacity="0" />
+          </radialGradient>
+          <linearGradient id={ringId} x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" className="avatar-badge__ring-stop-1" />
+            <stop offset="100%" className="avatar-badge__ring-stop-2" />
+          </linearGradient>
+        </defs>
 
-        {tier.group >= 2 && (
-          <path d="M 50 4 L 50 10 M 50 90 L 50 96" className="avatar-badge__accent-line" />
-        )}
-        {tier.group >= 3 && (
-          <path d="M 4 50 L 10 50 M 90 50 L 96 50" className="avatar-badge__accent-line" />
-        )}
-        {tier.group >= 4 && (
-          <g className="avatar-badge__wings">
-            <path d="M 12 35 C 18 30, 22 45, 18 55" />
-            <path d="M 88 35 C 82 30, 78 45, 82 55" />
+        {/* Stage 7: slow starlit outer ring */}
+        {n >= 7 && (
+          <g className="avatar-badge__starfield">
+            <circle cx="50" cy="50" r="49" className="avatar-badge__aura-ring" />
+            {STAR_ANGLES.map(angle => {
+              const [x, y] = polar(angle, 49);
+              return (
+                <path
+                  key={angle}
+                  d={`M${x} ${y - 2.6} L${x + 0.8} ${y - 0.8} L${x + 2.6} ${y} L${x + 0.8} ${y + 0.8} L${x} ${y + 2.6} L${x - 0.8} ${y + 0.8} L${x - 2.6} ${y} L${x - 0.8} ${y - 0.8} Z`}
+                  className="avatar-badge__star"
+                />
+              );
+            })}
           </g>
         )}
-        {tier.group >= 5 && (
-          <g className="avatar-badge__halo-lines">
-            <line x1="50" y1="15" x2="50" y2="85" />
-            <line x1="15" y1="50" x2="85" y2="50" />
-            <line x1="25" y1="25" x2="75" y2="75" strokeDasharray="2,2" />
-            <line x1="25" y1="75" x2="75" y2="25" strokeDasharray="2,2" />
-          </g>
-        )}
 
-        <g transform="translate(18, 18) scale(0.64)">
-          <path
-            d="M50,15 C33.43,15 20,28.43 20,45 C20,53.28 23.36,60.78 28.78,66.22 C21.15,70.83 15,78.2 15,87 C15,88.66 16.34,90 18,90 L82,90 C83.66,90 85,88.66 85,87 C85,78.2 78.85,70.83 71.22,66.22 C76.64,60.78 80,53.28 80,45 C80,28.43 66.57,15 50,15 Z"
-            className="avatar-badge__silhouette"
+        {/* XP ring: track + progress toward the next level */}
+        <circle cx="50" cy="50" r={RING_RADIUS} className="avatar-badge__track" />
+        {progress > 0 && (
+          <circle
+            cx="50"
+            cy="50"
+            r={RING_RADIUS}
+            className="avatar-badge__progress"
+            stroke={`url(#${ringId})`}
+            strokeDasharray={RING_CIRCUMFERENCE}
+            strokeDashoffset={RING_CIRCUMFERENCE - progress}
+            transform="rotate(-90 50 50)"
           />
+        )}
 
-          {tier.group >= 2 && <path d="M32,68 C40,75 60,75 68,68" className="avatar-badge__collar" />}
-          {tier.group >= 3 && (
+        {/* Stage 3+: four ring marks */}
+        {n >= 3 &&
+          MARK_ANGLES.map(angle => {
+            const [x, y] = polar(angle, RING_RADIUS);
+            return <circle key={angle} cx={x} cy={y} r="1.9" className="avatar-badge__mark" />;
+          })}
+
+        {/* Portrait */}
+        <circle cx="50" cy="50" r="40" fill={`url(#${bgId})`} />
+        {n >= 4 && <circle cx="50" cy="50" r="38" className="avatar-badge__inner-ring" />}
+
+        <g clipPath={`url(#${clipId})`}>
+          {n >= 7 && <circle cx="50" cy="40" r="27" fill={`url(#${haloId})`} />}
+
+          {n >= 6 && (
+            <g className="avatar-badge__laurels">
+              <path d="M26 68 C20 58 20 46 26 35" />
+              <path d="M74 68 C80 58 80 46 74 35" />
+              {[
+                [22.5, 60, -35],
+                [21.5, 51, -15],
+                [23.5, 42, 10],
+                [77.5, 60, 35],
+                [78.5, 51, 15],
+                [76.5, 42, -10]
+              ].map(([cx, cy, rot]) => (
+                <ellipse key={`${cx}-${cy}`} cx={cx} cy={cy} rx="2.2" ry="4" transform={`rotate(${rot} ${cx} ${cy})`} />
+              ))}
+            </g>
+          )}
+
+          {gender === "FEMININE" && (
             <path
-              d="M30,35 C38,18 62,18 70,35 C74,45 74,58 68,66 C60,74 40,74 32,66 C26,58 26,45 30,35 Z"
-              className="avatar-badge__cowl"
+              d="M35 43 C35 27 43 24.5 50 24.5 C57 24.5 65 27 65 43 C65 52 67 58 69.5 62.5 C62 66.5 38 66.5 30.5 62.5 C33 58 35 52 35 43 Z"
+              className="avatar-badge__hair"
             />
           )}
-          {tier.group >= 4 && <polygon points="42,24 50,14 58,24 50,28" className="avatar-badge__crown" />}
-          {tier.group >= 5 && <circle cx="50" cy="40" r="24" className="avatar-badge__aura" />}
+
+          <g transform={`translate(50 0) scale(${bodyScale} 1) translate(-50 0)`}>
+            <path d="M45 50 H55 V66 H45 Z" className="avatar-badge__body" />
+            <path d="M23 100 C23 76 35 64 50 64 C65 64 77 76 77 100 Z" className="avatar-badge__body" />
+
+            {n >= 2 && <path d="M37 65.5 Q50 75 63 65.5 L61.5 71 Q50 80 38.5 71 Z" className="avatar-badge__scarf" />}
+            {n >= 3 && <path d="M50 79 L55 85 L50 91 L45 85 Z" className="avatar-badge__sigil" />}
+            {n >= 4 && (
+              <>
+                <path d="M23.5 81 C24.5 72 30 67.5 37 67 L35.5 76 C30.5 76.5 26.5 78.5 23.5 81 Z" className="avatar-badge__pauldron" />
+                <path d="M76.5 81 C75.5 72 70 67.5 63 67 L64.5 76 C69.5 76.5 73.5 78.5 76.5 81 Z" className="avatar-badge__pauldron" />
+              </>
+            )}
+          </g>
+
+          <circle cx="50" cy="41" r={gender === "MASCULINE" ? 14.5 : 14} className="avatar-badge__head" />
+          {gender === "MASCULINE" && (
+            <path d="M35.6 39 C35.6 29 42 25.8 50 25.8 C58 25.8 64.4 29 64.4 39 C60 34.6 40 34.6 35.6 39 Z" className="avatar-badge__hair" />
+          )}
+          {gender === "FEMININE" && (
+            <path d="M36 38 C37 29 43 26.5 50 26.5 C57 26.5 63 29 64 38 C58 32 44 31 36 38 Z" className="avatar-badge__hair" />
+          )}
+
+          {n === 5 && (
+            <g>
+              <path d="M36.5 35.5 Q50 30.5 63.5 35.5" className="avatar-badge__circlet" />
+              <circle cx="50" cy="32.4" r="2" className="avatar-badge__gem" />
+            </g>
+          )}
+          {n >= 6 && (
+            <g>
+              <path d="M37.5 32 L39.5 20.5 L45 26.5 L50 17 L55 26.5 L60.5 20.5 L62.5 32 Z" className="avatar-badge__crown" />
+              {n >= 7 && <circle cx="50" cy="27" r="2.1" className="avatar-badge__gem" />}
+            </g>
+          )}
         </g>
       </svg>
 
-      <div className={`avatar-badge__level avatar-badge__level--${tier.ring}`}>Lvl {level}</div>
+      {showLevel && !locked && <div className="avatar-badge__level">Lv {level}</div>}
     </div>
   );
 }
-
-export { TIERS, tierForLevel };
