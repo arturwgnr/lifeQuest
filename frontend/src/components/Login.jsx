@@ -1,7 +1,10 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Shield, Mail, Lock } from "lucide-react";
+import { Mail, Lock, ArrowRight, AlertCircle } from "lucide-react";
 import { useAuth } from "../context/AuthContext.jsx";
+import AuthLayout, { AuthField } from "./AuthLayout.jsx";
+import BrandMark from "./BrandMark.jsx";
+import LoadingIndicator from "./LoadingIndicator.jsx";
 import "../styles/Auth.css";
 
 export default function Login() {
@@ -21,51 +24,54 @@ export default function Login() {
       await login({ email, password });
       navigate("/app");
     } catch (err) {
-      setError(err.message);
+      setError(err instanceof TypeError ? "Network error. Check your connection and try again." : err.message);
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="auth-screen">
-      <div className="auth-card">
-        <div className="auth-card__header">
-          <div className="auth-card__badge">
-            <Shield size={18} />
-          </div>
-          <h1>lifeQuest</h1>
-          <p>Secure Accountability Log &amp; Productivity Engine</p>
-        </div>
-
-        <form onSubmit={handleLogin} className="auth-form">
-          <div className="auth-field">
-            <label>Account Email</label>
-            <div className="auth-field__input-wrap">
-              <Mail size={16} />
-              <input type="email" required value={email} onChange={e => setEmail(e.target.value)} />
-            </div>
-          </div>
-
-          <div className="auth-field">
-            <label>Password</label>
-            <div className="auth-field__input-wrap">
-              <Lock size={16} />
-              <input type="password" required value={password} onChange={e => setPassword(e.target.value)} />
-            </div>
-          </div>
-
-          {error && <div className="auth-form__error">{error}</div>}
-
-          <button type="submit" className="auth-submit" disabled={isSubmitting}>
-            {isSubmitting ? "Signing In..." : "Sign In to Quest Log"}
-          </button>
-        </form>
-
-        <div className="auth-card__switch">
-          New here? <Link to="/register">Register a quest log</Link>
-        </div>
+    <AuthLayout>
+      <div className="auth-card__header">
+        <BrandMark size={44} />
+        <h1>Welcome back</h1>
+        <p>Sign in to pick up your quest log where you left it.</p>
       </div>
-    </div>
+
+      <form onSubmit={handleLogin} className="auth-form">
+        <AuthField label="Account Email" icon={Mail} type="email" required value={email} onChange={setEmail} autoComplete="email" />
+        <AuthField
+          label="Password"
+          icon={Lock}
+          type="password"
+          required
+          value={password}
+          onChange={setPassword}
+          autoComplete="current-password"
+        />
+
+        {error && (
+          <div className="auth-form__error" role="alert">
+            <AlertCircle size={15} />
+            {error}
+          </div>
+        )}
+
+        <button type="submit" className="auth-submit btn-lift" disabled={isSubmitting}>
+          {isSubmitting ? (
+            <LoadingIndicator size="sm" tone="light" label="Signing in..." />
+          ) : (
+            <>
+              Sign In to Quest Log
+              <ArrowRight size={16} />
+            </>
+          )}
+        </button>
+      </form>
+
+      <div className="auth-card__switch">
+        New here? <Link to="/register">Register a quest log</Link>
+      </div>
+    </AuthLayout>
   );
 }
