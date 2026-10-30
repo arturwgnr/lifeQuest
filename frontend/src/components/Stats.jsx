@@ -181,7 +181,7 @@ export default function Stats() {
                 <LayoutGrid size={15} />
                 Category Breakdown
               </h3>
-              <p className="stats__card-sub">Completion rate by category &mdash; where attention is (and isn&apos;t) going.</p>
+              <p className="stats__card-sub">Completion rate by category: where attention is (and isn&apos;t) going.</p>
               <BarChart
                 bars={data.categoryBreakdown.map(c => {
                   const config = getCategoryDisplay(c.categoryId);
@@ -204,7 +204,7 @@ export default function Stats() {
                 <Clock size={15} />
                 Time in Status
               </h3>
-              <p className="stats__card-sub">Average days tasks spend In Progress vs. Blocked, per category &mdash; your procrastination gaps.</p>
+              <p className="stats__card-sub">Average days tasks spend In Progress vs. Blocked, per category, your procrastination gaps.</p>
               <BarChart
                 bars={data.timeInStatus.map(t => ({
                   key: t.categoryId,
@@ -238,7 +238,7 @@ export default function Stats() {
                 <History size={15} />
                 Task Completion History
               </h3>
-              <p className="stats__card-sub">Day-by-day record of completed quests &mdash; the shape of your follow-through over time.</p>
+              <p className="stats__card-sub">Day-by-day record of completed quests: the shape of your follow-through over time.</p>
               <TaskHistoryPanel history={data.taskHistory} />
             </section>
           </div>

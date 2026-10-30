@@ -1,4 +1,5 @@
 const { GoogleGenAI } = require("@google/genai");
+const { NO_EM_DASH_RULE, stripEmDash } = require("../src/lib/sanitizeAi");
 
 const MODEL = "gemini-flash-latest";
 
@@ -10,7 +11,8 @@ Rules you must follow:
 1. You can suggest new tasks based on what the user tells you, but you never create tasks directly, you only
    propose them. The user always reviews, edits, approves, or rejects a suggestion before it becomes a real task.
 2. If you're unsure whether something the user mentions is a brand new task or an existing one that's already
-   done, ask a clarifying question instead of assuming.`;
+   done, ask a clarifying question instead of assuming.
+3. ${NO_EM_DASH_RULE}`;
 
 // Pure AI communication layer for the Oracle: no database access, no Express routes.
 // Kept isolated so a route can wire this up later without coupling the two.
@@ -31,7 +33,7 @@ async function askOracle(userMessage, conversationHistory = []) {
     contents,
     config: { systemInstruction: SYSTEM_INSTRUCTION },
   });
-  return result.text;
+  return stripEmDash(result.text);
 }
 
 module.exports = { askOracle };

@@ -127,7 +127,7 @@ export default function AttentionToday({ tasks, onTaskSelect, onQuickComplete })
       {overflow.length > 0 && (
         <div className="attention-today__carousel-wrap">
           <span className="attention-today__carousel-label">
-            {overflow.length} more {overflow.length === 1 ? "issue" : "issues"} &mdash; scroll to review
+            {overflow.length} more {overflow.length === 1 ? "issue" : "issues"}, scroll to review
           </span>
           <div className="attention-today__carousel">
             {overflow.map(task => (

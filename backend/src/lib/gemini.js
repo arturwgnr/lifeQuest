@@ -1,4 +1,5 @@
 const { GoogleGenAI, FunctionCallingConfigMode, Type } = require("@google/genai");
+const { NO_EM_DASH_RULE, stripEmDash } = require("./sanitizeAi");
 
 const MODEL = "gemini-flash-latest";
 
@@ -86,6 +87,7 @@ Rules you must follow:
 3. Keep tone supportive and concise, with a light, subtle mentor/RPG flavor, but this is a real productivity tool,
    not a game - never silly, never childish fantasy slang.
 4. Assign XP thoughtfully: 10-20 for small side tasks, 40-60 for main tasks, 80-100 for large milestones.
+5. ${NO_EM_DASH_RULE}
 
 Existing tasks (for cross-referencing and duplicate detection):
 ${context}
@@ -148,9 +150,11 @@ async function getOracleResponse({
 
   const { reply, question, suggestions } = call.args;
   return {
-    reply: reply || "",
-    question: question || null,
-    suggestions: Array.isArray(suggestions) ? suggestions : [],
+    reply: stripEmDash(reply || ""),
+    question: question ? stripEmDash(question) : null,
+    suggestions: Array.isArray(suggestions)
+      ? suggestions.map((s) => ({ ...s, title: stripEmDash(s.title), notes: stripEmDash(s.notes) }))
+      : [],
   };
 }
 
@@ -183,7 +187,7 @@ supportive summary of emotional patterns and trends this week. You may gently no
 emotions, or - if provided - a correlation with a high number of stagnant/blocked tasks or with the user's task
 completion activity for the same week below, but only if the data actually supports it. You
 must NEVER make diagnostic or clinical claims and NEVER suggest therapy or medical treatment. Keep the tone warm,
-encouraging, and grounded in what the entries actually say.`;
+encouraging, and grounded in what the entries actually say. ${NO_EM_DASH_RULE}`;
 
   const userContent = `This week's journal entries:\n${entrySummary}\n\nCurrently stagnant/blocked tasks in the tracker: ${stagnantTaskCount}\n\nTasks completed this week:\n${formatTaskCompletionContext(taskCompletionContext)}`;
 
@@ -192,7 +196,7 @@ encouraging, and grounded in what the entries actually say.`;
     contents: userContent,
     config: { systemInstruction: system },
   });
-  return result.text || "The Oracle could not generate an insight this week.";
+  return stripEmDash(result.text) || "The Oracle could not generate an insight this week.";
 }
 
 async function getEntryInsight({ newEntry, recentEntries, taskCompletionContext }) {
@@ -217,7 +221,8 @@ user's recent past entries as memory/context so you can notice patterns, recurri
 recent days when relevant - but only mention a pattern if the entries actually support it. You may also gently note
 alignment or contrast between the user's mood and their recent task-completion activity below, if relevant, but only
 if it's clearly supported. Never make diagnostic or clinical claims, never suggest therapy or medical treatment. Warm,
-grounded, concise tone. This supplements a weekly summary, so keep it short and specific to today's entry.`;
+grounded, concise tone. This supplements a weekly summary, so keep it short and specific to today's entry.
+${NO_EM_DASH_RULE}`;
 
   const userContent = `Recent past entries (oldest to newest, may be empty if this is the first):\n${history || "(none yet)"}\n\nRecent task completion activity:\n${formatTaskCompletionContext(taskCompletionContext)}\n\nToday's new entry (${newEntry.entryDate}): rating ${newEntry.dayRating}/5, moods: ${newEntry.moods.join(", ") || "none"} - "${newEntry.text.slice(0, 500)}"`;
 
@@ -226,7 +231,7 @@ grounded, concise tone. This supplements a weekly summary, so keep it short and 
     contents: userContent,
     config: { systemInstruction: system },
   });
-  return result.text || null;
+  return stripEmDash(result.text) || null;
 }
 
 module.exports = {

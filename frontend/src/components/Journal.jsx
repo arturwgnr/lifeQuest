@@ -180,7 +180,7 @@ export default function Journal() {
             </div>
           )}
           {entryAiLimitReached && (
-            <p className="journal__ai-limit-note">Daily AI limit reached — insight will resume tomorrow.</p>
+            <p className="journal__ai-limit-note">Daily AI limit reached. Insights will resume tomorrow.</p>
           )}
         </section>
 
@@ -203,7 +203,7 @@ export default function Journal() {
                 <LoadingIndicator variant="inline" size="sm" label="Reflecting on your week..." />
               </div>
             ) : weeklyAiLimitReached ? (
-              <p className="journal__ai-limit-note">Daily AI limit reached — your weekly insight will resume tomorrow.</p>
+              <p className="journal__ai-limit-note">Daily AI limit reached. Your weekly insight will resume tomorrow.</p>
             ) : insight ? (
               <>
                 <p className="journal__insight-range">
@@ -214,7 +214,7 @@ export default function Journal() {
               </>
             ) : (
               <p className="journal__insight-loading">
-                No insight yet &mdash; write a few entries this week and check back.
+                No insight yet. Write a few entries this week and check back.
               </p>
             )}
           </section>

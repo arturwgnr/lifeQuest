@@ -320,7 +320,7 @@ export default function Profile() {
 
               <div className="profile__category-breakdown">
                 {summary.pendingByCategory.length === 0 ? (
-                  <p className="profile__empty">Nothing pending &mdash; clear horizon.</p>
+                  <p className="profile__empty">Nothing pending. Clear horizon.</p>
                 ) : (
                   summary.pendingByCategory
                     .slice()
