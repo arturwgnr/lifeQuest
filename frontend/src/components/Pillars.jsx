@@ -1,22 +1,15 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { CalendarCheck, Check, ChevronLeft, ChevronRight, Layers, Save, Settings } from "lucide-react";
+import { CalendarCheck, Check, ChevronLeft, ChevronRight, Plus, Save, Settings } from "lucide-react";
 import { api } from "../api/client.js";
 import { useToast, errorToastFor } from "../context/ToastContext.jsx";
-import { completionRate, dayQualityLabel, pillarScaleStyle } from "../constants/pillars.js";
+import { completionRate, dayQualityLabel, localDateKey, pillarScaleStyle } from "../constants/pillars.js";
 import PillarsCalendar from "./PillarsCalendar.jsx";
 import LoadingIndicator from "./LoadingIndicator.jsx";
 import ConfirmModal from "./ConfirmModal.jsx";
+import StampBadge from "./StampBadge.jsx";
+import PillarTitleForm from "./PillarTitleForm.jsx";
 import "../styles/Pillars.css";
-
-// Calendar day in the user's own timezone (toISOString would roll over to
-// "tomorrow" in the evening for anyone west of UTC).
-function localDateKey(date = new Date()) {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
-}
 
 function shiftDateKey(key, days) {
   const date = new Date(`${key}T00:00:00.000Z`);
@@ -87,10 +80,16 @@ export default function Pillars() {
   const [isDeletingDay, setIsDeletingDay] = useState(false);
   // Bumped after deleting the selected day so its (now empty) checklist reloads
   const [logVersion, setLogVersion] = useState(0);
+  const [isAddingPillar, setIsAddingPillar] = useState(false);
+  const [isSavingPillar, setIsSavingPillar] = useState(false);
 
   const activeGroup = groups.find(g => g.isActive) || null;
   const logGroup = groups.find(g => g.id === logGroupId) || null;
   const summaryByDate = useMemo(() => new Map(summary.map(s => [s.date, s])), [summary]);
+  // Read inside the day loader without making every groups change reload
+  // the day (which would wipe unsaved checks after adding a pillar inline)
+  const groupsRef = useRef(groups);
+  groupsRef.current = groups;
 
   const loadGroups = async () => {
     const { groups: loaded } = await api.pillars.groups.list();
@@ -126,19 +125,36 @@ export default function Pillars() {
       setIsFetchingLog(true);
       let next = [];
       let groupId = null;
+      const currentActive = groupsRef.current.find(g => g.isActive) || null;
       try {
         const { log } = await api.pillars.logs.get(selectedDate);
+        // null when the day's group was deleted: the day keeps its snapshot
+        // score on the calendar but has no checklist left to show
         groupId = log.groupId;
         next = log.entries
           .slice()
           .sort((a, b) => a.pillar.order - b.pillar.order)
           .map(e => ({ pillarId: e.pillarId, title: e.pillar.title, completed: e.completed }));
+
+        // Pillars added to the group after today's report was saved show up
+        // unchecked, without touching the saved report until it's saved again
+        const group = groupId && selectedDate === todayKey ? groupsRef.current.find(g => g.id === groupId) : null;
+        if (group) {
+          const logged = new Set(next.map(e => e.pillarId));
+          const order = new Map(group.pillars.map(p => [p.id, p.order]));
+          next = [
+            ...next,
+            ...group.pillars
+              .filter(p => !logged.has(p.id))
+              .map(p => ({ pillarId: p.id, title: p.title, completed: false, isNew: true }))
+          ].sort((a, b) => (order.get(a.pillarId) ?? 0) - (order.get(b.pillarId) ?? 0));
+        }
       } catch (err) {
         if (err.status !== 404) {
           if (!cancelled) errorToastFor(toast, err, "Couldn't load that day's report");
-        } else if (activeGroup) {
-          groupId = activeGroup.id;
-          next = activeGroup.pillars.map(p => ({ pillarId: p.id, title: p.title, completed: false }));
+        } else if (currentActive) {
+          groupId = currentActive.id;
+          next = currentActive.pillars.map(p => ({ pillarId: p.id, title: p.title, completed: false }));
         }
       }
       if (cancelled) return;
@@ -151,7 +167,7 @@ export default function Pillars() {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedDate, isLoading, groups, logVersion]);
+  }, [selectedDate, isLoading, activeGroup?.id, logVersion]);
 
   const toggleEntry = pillarId => {
     setChecklist(prev => prev.map(e => (e.pillarId === pillarId ? { ...e, completed: !e.completed } : e)));
@@ -161,6 +177,47 @@ export default function Pillars() {
   const completedCount = checklist.filter(e => e.completed).length;
   const liveRate = completionRate(completedCount, checklist.length);
   const isReported = summaryByDate.has(selectedDate);
+  const savedDay = summaryByDate.get(selectedDate) || null;
+  const savedRate = savedDay ? completionRate(savedDay.completedCount, savedDay.totalCount) : null;
+  const hasNewPillars = checklist.some(e => e.isNew);
+  // The calendar keeps the snapshot a day was saved with; say so whenever the
+  // checklist on screen no longer matches it (pillars added/removed since)
+  const snapshotDiffers = Boolean(savedDay) && !isDirty && savedDay.totalCount !== checklist.length;
+  const isDeletedDayType = isReported && !logGroupId && !isFetchingLog;
+  const canAddPillar = Boolean(logGroup) && selectedDate === todayKey;
+
+  // Optimistic: the pillar joins today's checklist (unchecked) right away and
+  // is saved to the group; a failure takes it back out.
+  const handleAddPillar = async title => {
+    if (!logGroup) return;
+    const tempId = `pending-${Date.now()}`;
+    const group = logGroup;
+    const entry = { pillarId: tempId, title, completed: false, isNew: true };
+    setChecklist(prev => [...prev, entry]);
+    setSavedChecklist(prev => [...prev, entry]);
+    setIsSavingPillar(true);
+    try {
+      const { pillar } = await api.pillars.items.add(group.id, { title });
+      const swap = list => list.map(e => (e.pillarId === tempId ? { ...e, pillarId: pillar.id } : e));
+      setChecklist(swap);
+      setSavedChecklist(swap);
+      setGroups(prev => prev.map(g => (g.id === group.id ? { ...g, pillars: [...g.pillars, pillar] } : g)));
+      setIsAddingPillar(false);
+      toast.success(`Pillar added: ${title}`, {
+        description: isReported
+          ? "It counts from today. Save the report to include it in today's score."
+          : `It counts in ${group.name} from today on.`
+      });
+    } catch (err) {
+      const drop = list => list.filter(e => e.pillarId !== tempId);
+      setChecklist(drop);
+      setSavedChecklist(drop);
+      errorToastFor(toast, err, "Pillar couldn't be added");
+      throw err;
+    } finally {
+      setIsSavingPillar(false);
+    }
+  };
 
   const handleSave = async () => {
     if (!logGroupId) return;
@@ -171,9 +228,11 @@ export default function Pillars() {
         entries: checklist.map(e => ({ pillarId: e.pillarId, completed: e.completed }))
       });
       await loadSummary();
-      setSavedChecklist(checklist);
+      const saved = checklist.map(({ isNew, ...e }) => e);
+      setChecklist(saved);
+      setSavedChecklist(saved);
       toast.success(`Pillar report saved · ${liveRate}%`, {
-        description: `${dayQualityLabel(liveRate)} — ${completedCount} of ${checklist.length} pillars for ${selectedDateLabel}`
+        description: `${dayQualityLabel(liveRate)}: ${completedCount} of ${checklist.length} pillars for ${selectedDateLabel}`
       });
     } catch (err) {
       errorToastFor(toast, err, "Report couldn't be saved");
@@ -262,7 +321,7 @@ export default function Pillars() {
         <div className="pillars__header-actions">
           {groups.length > 1 && (
             <label className="pillars__group-switch">
-              <Layers size={14} />
+              {activeGroup && <StampBadge {...activeGroup} size="xs" />}
               <span className="pillars__sr">Active group</span>
               <select value={activeGroup?.id || ""} onChange={e => handleSwitchGroup(e.target.value)} disabled={isSwitching}>
                 {groups.map(g => (
@@ -293,7 +352,19 @@ export default function Pillars() {
               <div className="pillars__day-label">
                 <span className="pillars__day-eyebrow">
                   {selectedDate === todayKey ? "Today" : isReported ? "Reported" : "Not reported"}
-                  {logGroup && <> · {logGroup.name}</>}
+                  {logGroup ? (
+                    <span className="pillars__day-type">
+                      <StampBadge {...logGroup} size="xs" />
+                      {logGroup.name}
+                    </span>
+                  ) : (
+                    isDeletedDayType && (
+                      <span className="pillars__day-type">
+                        <span className="pillars__day-type-dot" aria-hidden="true" />
+                        {savedDay?.groupName || "Deleted day type"}
+                      </span>
+                    )
+                  )}
                 </span>
                 <h3>{selectedDateLabel}</h3>
               </div>
@@ -313,9 +384,15 @@ export default function Pillars() {
             )}
           </div>
 
-          {checklist.length === 0 ? (
+          {isDeletedDayType ? (
             <p className="pillars__empty">
-              No Pillars defined for this group yet. <Link to="/app/pillars/edit">Add some</Link> to start tracking.
+              This day was reported as <strong>{savedDay?.groupName || "a day type"}</strong>, which has since been deleted.
+              Its saved score of {savedRate}% ({savedDay.completedCount}/{savedDay.totalCount}) stays on your calendar.
+            </p>
+          ) : checklist.length === 0 ? (
+            <p className="pillars__empty">
+              No pillars in {logGroup ? logGroup.name : "this group"} yet.{" "}
+              {canAddPillar ? "Add one below" : <Link to="/app/pillars/edit">Add some</Link>} to start tracking.
             </p>
           ) : (
             <>
@@ -343,22 +420,61 @@ export default function Pillars() {
                         <Check size={14} strokeWidth={3} />
                       </span>
                       <span className="pillars__checklist-title">{entry.title}</span>
+                      {entry.isNew && isReported && <span className="pillars__new-tag">New</span>}
                     </label>
                   </li>
                 ))}
               </ul>
+
+              {snapshotDiffers && (
+                <p className="pillars__snapshot-note">
+                  {hasNewPillars
+                    ? `Saved on the calendar as ${savedRate}% (${savedDay.completedCount}/${savedDay.totalCount}). A pillar was added after this report, so save again to include it.`
+                    : `Saved on the calendar as ${savedRate}% (${savedDay.completedCount}/${savedDay.totalCount}), from before this group's pillars changed. Saving again updates it.`}
+                </p>
+              )}
             </>
           )}
 
+          {canAddPillar &&
+            (isAddingPillar ? (
+              <div className="pillars__add-pillar">
+                <PillarTitleForm
+                  placeholder={`New pillar for ${logGroup.name}`}
+                  submitLabel="Add"
+                  isSaving={isSavingPillar}
+                  onSubmit={handleAddPillar}
+                  onCancel={() => setIsAddingPillar(false)}
+                />
+              </div>
+            ) : (
+              <button type="button" className="pillars__add-pillar-btn" onClick={() => setIsAddingPillar(true)}>
+                <Plus size={13} />
+                Add pillar
+              </button>
+            ))}
+
           <div className="pillars__report-actions">
-            <span className={`pillars__save-state${isDirty ? " pillars__save-state--dirty" : ""}`}>
-              {isDirty ? "Unsaved changes" : isReported ? "All changes saved" : "Not saved yet"}
+            <span className={`pillars__save-state${isDirty || hasNewPillars ? " pillars__save-state--dirty" : ""}`}>
+              {isDirty
+                ? "Unsaved changes"
+                : isReported && hasNewPillars
+                  ? "New pillar not in the saved report yet"
+                  : isReported
+                    ? "All changes saved"
+                    : "Not saved yet"}
             </span>
             <button
               type="button"
               className="pillars__save btn-lift"
               onClick={handleSave}
-              disabled={isSaving || isFetchingLog || checklist.length === 0 || (!isDirty && isReported)}
+              disabled={
+                isSaving ||
+                isFetchingLog ||
+                isSavingPillar ||
+                checklist.length === 0 ||
+                (!isDirty && isReported && !hasNewPillars && !snapshotDiffers)
+              }
             >
               {isSaving ? (
                 <LoadingIndicator size="sm" tone="light" label="Saving..." />

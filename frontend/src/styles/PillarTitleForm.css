@@ -1,0 +1,87 @@
+.pillar-title-form {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  width: 100%;
+}
+
+.pillar-title-form input {
+  flex: 1;
+  min-width: 0;
+  min-height: 2.25rem;
+  font-size: 0.8125rem;
+  padding: 0.45rem 0.7rem;
+  color: var(--slate-900);
+  background: var(--surface);
+  border: 1px solid var(--slate-300);
+  border-radius: 0.6rem;
+}
+
+.pillar-title-form input:focus {
+  outline: none;
+  border-color: var(--indigo-500);
+  box-shadow: 0 0 0 3px var(--hover-accent-bg);
+}
+
+.pillar-title-form__cancel {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  flex-shrink: 0;
+  padding: 0;
+  color: var(--slate-500);
+  background: var(--surface);
+  border: 1px solid var(--slate-200);
+  border-radius: 0.6rem;
+}
+
+.pillar-title-form__save {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex-shrink: 0;
+  min-height: 2.25rem;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: white;
+  background: var(--ink);
+  border: none;
+  border-radius: 0.6rem;
+}
+
+.pillar-title-form__save:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (hover: hover) {
+  .pillar-title-form__cancel:not(:disabled):hover {
+    color: var(--hover-accent);
+    border-color: var(--hover-accent-border);
+    background: var(--hover-accent-bg);
+  }
+
+  .pillar-title-form__save:not(:disabled):hover {
+    background: var(--emerald-600);
+  }
+}
+
+/* Phones: full-size touch targets, the label folds into the check icon */
+@media (max-width: 480px) {
+  .pillar-title-form input,
+  .pillar-title-form__cancel,
+  .pillar-title-form__save {
+    min-height: 2.75rem;
+  }
+
+  .pillar-title-form__cancel {
+    width: 2.75rem;
+  }
+
+  .pillar-title-form__save span {
+    display: none;
+  }
+}

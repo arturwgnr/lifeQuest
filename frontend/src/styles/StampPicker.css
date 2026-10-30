@@ -1,0 +1,113 @@
+.stamp-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.stamp-picker__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(2.5rem, 1fr));
+  gap: 0.35rem;
+}
+
+.stamp-picker__option {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  min-height: 2.5rem;
+  padding: 0;
+  color: var(--slate-500);
+  background: var(--surface);
+  border: 1px solid var(--slate-200);
+  border-radius: 0.65rem;
+  transition: color var(--dur-fast) ease, border-color var(--dur-fast) ease, background-color var(--dur-fast) ease;
+}
+
+.stamp-picker__option--selected {
+  color: var(--indigo-600);
+  background: var(--indigo-50);
+  border-color: var(--indigo-500);
+  box-shadow: 0 0 0 1px var(--indigo-500);
+}
+
+[data-theme="dark"] .stamp-picker__option--selected {
+  color: var(--indigo-300);
+  background: rgba(99, 102, 241, 0.16);
+}
+
+.stamp-picker__tones {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.stamp-picker__tones-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--slate-500);
+  margin-right: 0.2rem;
+}
+
+.stamp-picker__tone {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  color: white;
+  border: 2px solid var(--surface);
+  border-radius: 999px;
+  box-shadow: 0 0 0 1px var(--slate-200);
+}
+
+.stamp-picker__tone--selected {
+  box-shadow: 0 0 0 2px var(--slate-700);
+}
+
+.stamp-picker__tone--slate {
+  background: var(--slate-500);
+}
+
+.stamp-picker__tone--stone {
+  background: var(--stone-400);
+}
+
+.stamp-picker__tone--indigo {
+  background: var(--indigo-500);
+}
+
+.stamp-picker__tone--violet {
+  background: var(--violet-500);
+}
+
+.stamp-picker__tone--sky {
+  background: var(--sky-500);
+}
+
+@media (hover: hover) {
+  .stamp-picker__option:not(.stamp-picker__option--selected):hover {
+    color: var(--hover-accent);
+    border-color: var(--hover-accent-border);
+    background: var(--hover-accent-bg);
+  }
+}
+
+@media (max-width: 480px) {
+  .stamp-picker__grid {
+    grid-template-columns: repeat(7, 1fr);
+  }
+
+  .stamp-picker__option {
+    min-height: 2.6rem;
+  }
+
+  .stamp-picker__tone {
+    width: 2.25rem;
+    height: 2.25rem;
+  }
+}

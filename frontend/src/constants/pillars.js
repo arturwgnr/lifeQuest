@@ -5,6 +5,19 @@
 // Only the hue is computed here; lightness/chroma live in CSS (muted, tuned
 // separately for light and dark mode, in the spirit of the Journal rating
 // palette), which renders it as oklch(L C var(--pillar-hue)).
+// Calendar day in the user's own timezone (toISOString would roll over to
+// "tomorrow" in the evening for anyone west of UTC).
+export function localDateKey(date = new Date()) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+export function pluralDays(count) {
+  return `${count} logged day${count === 1 ? "" : "s"}`;
+}
+
 const HUE_RED = 25;
 const HUE_YELLOW = 92;
 const HUE_GREEN = 150;

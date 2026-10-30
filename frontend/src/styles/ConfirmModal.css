@@ -140,3 +140,14 @@
     min-height: 2.875rem;
   }
 }
+
+/* Extra heads-up inside a destructive confirmation (e.g. "the group will be empty") */
+.confirm-modal__note {
+  padding: 0.55rem 0.7rem;
+  font-size: 0.8125rem;
+  color: var(--slate-700);
+  background: var(--slate-50);
+  border: 1px solid var(--slate-200);
+  border-left: 3px solid var(--indigo-500);
+  border-radius: 0.5rem;
+}

@@ -453,3 +453,93 @@
     padding: 0.4rem 0.8rem;
   }
 }
+
+/* ---------- Day-type stamps ---------- */
+
+/* The stamp sits in the cell's top-right corner. It inherits the cell's text
+   color, which is already picked for contrast against the completion fill
+   (--pillar-ink on scored cells), in light and dark mode. */
+.pillars-calendar__cell-stamp {
+  position: absolute;
+  top: 0.22rem;
+  right: 0.22rem;
+  display: flex;
+  line-height: 0;
+  opacity: 0.85;
+}
+
+.pillars-calendar__cell-stamp svg {
+  width: 0.7rem;
+  height: 0.7rem;
+}
+
+.pillars-calendar__cell-stamp--dot {
+  width: 0.35rem;
+  height: 0.35rem;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  opacity: 0.7;
+}
+
+.pillars-calendar__detail-text > .pillars-calendar__detail-sub {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.pillars-calendar__detail-sub > span:last-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pillars-calendar__detail-dot {
+  display: inline-block;
+  flex-shrink: 0;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 999px;
+  border: 1px dashed var(--slate-400);
+}
+
+/* Legend: one chip per day type in use this month */
+.pillars-calendar__stamps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.85rem;
+  margin: 0.85rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pillars-calendar__stamps li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+  font-size: 0.75rem;
+  color: var(--slate-600);
+}
+
+/* Phones: cells shrink to ~40px, so the stamp becomes a smaller glyph
+   tucked into the corner instead of disappearing */
+@media (max-width: 640px) {
+  .pillars-calendar__cell-stamp {
+    top: 0.15rem;
+    right: 0.15rem;
+  }
+
+  .pillars-calendar__cell-stamp svg {
+    width: 0.6rem;
+    height: 0.6rem;
+  }
+}
+
+@media (max-width: 380px) {
+  .pillars-calendar__cell-stamp svg {
+    width: 0.5rem;
+    height: 0.5rem;
+  }
+}

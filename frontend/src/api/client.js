@@ -81,6 +81,12 @@ export const api = {
       activate: id => request(`/pillars/groups/${id}/activate`, { method: "PATCH" }),
       remove: id => request(`/pillars/groups/${id}`, { method: "DELETE" })
     },
+    items: {
+      add: (groupId, body) =>
+        request(`/pillars/groups/${groupId}/pillars`, { method: "POST", body: JSON.stringify(body) }),
+      update: (id, body) => request(`/pillars/pillars/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+      remove: (id, today) => request(`/pillars/pillars/${id}?today=${today}`, { method: "DELETE" })
+    },
     logs: {
       list: month => request(`/pillars/logs?month=${month}`),
       get: date => request(`/pillars/logs/${date}`),

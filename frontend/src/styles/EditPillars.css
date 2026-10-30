@@ -260,3 +260,233 @@
     background: var(--emerald-600) !important;
   }
 }
+
+/* ---------- Batch 21: stamps and inline pillar management ---------- */
+
+.edit-pillars__intro {
+  margin: 0.4rem 0 0;
+  max-width: 34rem;
+  font-size: 0.8rem;
+  color: var(--slate-500);
+}
+
+.edit-pillars__name {
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.edit-pillars__name-text {
+  overflow-wrap: anywhere;
+}
+
+.edit-pillars__row-actions button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.edit-pillars__meta {
+  margin: 0.35rem 0 0;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--slate-400);
+}
+
+.edit-pillars__nudge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.5rem;
+  padding: 0.35rem 0.6rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-align: left;
+  color: var(--indigo-600);
+  background: var(--indigo-50);
+  border: 1px dashed var(--indigo-100);
+  border-radius: var(--radius-md);
+}
+
+.edit-pillars__empty {
+  margin: 0.6rem 0 0;
+  padding: 0.65rem 0.75rem;
+  font-size: 0.8rem;
+  color: var(--slate-500);
+  border: 1px dashed var(--slate-200);
+  border-radius: var(--radius-md);
+}
+
+.edit-pillars__pillar-list {
+  gap: 0;
+  margin-top: 0.6rem;
+  border-top: 1px solid var(--slate-100);
+}
+
+.edit-pillars__pillar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.5rem;
+  padding: 0.3rem 0;
+  border-bottom: 1px solid var(--slate-100);
+}
+
+.edit-pillars__pillar--pending {
+  opacity: 0.65;
+}
+
+.edit-pillars__pillar-title {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.edit-pillars__pillar-count {
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--slate-400);
+}
+
+.edit-pillars__pillar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  flex-shrink: 0;
+}
+
+.edit-pillars__pillar-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  color: var(--slate-500);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+}
+
+.edit-pillars__pillar-actions button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+@media (hover: hover) {
+  .edit-pillars__pillar-actions button:not(:disabled):hover {
+    color: var(--hover-accent);
+    background: var(--hover-accent-bg);
+    border-color: var(--hover-accent-border);
+  }
+
+  .edit-pillars__pillar-actions .edit-pillars__pillar-delete:not(:disabled):hover {
+    color: var(--hover-danger);
+    background: var(--hover-danger-bg);
+    border-color: var(--hover-danger-border);
+  }
+
+  .edit-pillars__nudge:hover {
+    background: var(--indigo-100);
+  }
+}
+
+.edit-pillars__add-pillar-form {
+  margin-top: 0.6rem;
+}
+
+.edit-pillars__row > .edit-pillars__add-row {
+  margin-top: 0.5rem;
+  min-height: 2.25rem;
+}
+
+.edit-pillars__name-field {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.edit-pillars__name-field input {
+  flex: 1;
+  min-width: 0;
+}
+
+.edit-pillars__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.edit-pillars__field-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--slate-500);
+}
+
+.edit-pillars__form-actions {
+  justify-content: flex-end;
+}
+
+.edit-pillars__form .edit-pillars__pillar-row button {
+  width: 2.25rem;
+  height: 2.25rem;
+}
+
+[data-theme="dark"] .edit-pillars__nudge {
+  color: var(--indigo-300);
+  background: rgba(99, 102, 241, 0.12);
+  border-color: rgba(129, 140, 248, 0.3);
+}
+
+/* Phones: rows wrap so the pillar actions get their own line and every
+   control keeps a comfortable touch target */
+@media (max-width: 640px) {
+  .edit-pillars {
+    padding: 1rem;
+  }
+
+  .edit-pillars__row-top {
+    align-items: flex-start;
+  }
+
+  .edit-pillars__row-actions button {
+    min-width: 2.5rem;
+    min-height: 2.5rem;
+    justify-content: center;
+  }
+
+  .edit-pillars__pillar {
+    flex-wrap: wrap;
+    padding: 0.45rem 0;
+  }
+
+  .edit-pillars__pillar-title {
+    flex-basis: calc(100% - 5rem);
+  }
+
+  .edit-pillars__pillar-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .edit-pillars__pillar-actions button {
+    width: 2.6rem;
+    height: 2.6rem;
+  }
+
+  .edit-pillars__form-actions button {
+    flex: 1;
+    min-height: 2.75rem;
+    justify-content: center;
+  }
+
+  .edit-pillars__form .edit-pillars__pillar-row input {
+    min-height: 2.75rem;
+  }
+
+  .edit-pillars__form .edit-pillars__pillar-row button {
+    width: 2.75rem;
+    height: 2.75rem;
+  }
+}

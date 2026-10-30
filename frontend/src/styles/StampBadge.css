@@ -1,0 +1,77 @@
+/* Day-type stamp: a small tinted seal. Tones are muted and never on the
+   red-yellow-green completion scale. */
+.stamp-badge {
+  --stamp-fg: var(--slate-600);
+  --stamp-bg: var(--slate-100);
+  --stamp-border: var(--slate-200);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 999px;
+  color: var(--stamp-fg);
+  background: var(--stamp-bg);
+  border: 1px solid var(--stamp-border);
+}
+
+.stamp-badge--xs {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+.stamp-badge--sm {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.stamp-badge--md {
+  width: 2rem;
+  height: 2rem;
+}
+
+.stamp-badge--lg {
+  width: 2.75rem;
+  height: 2.75rem;
+}
+
+.stamp-badge--stone {
+  --stamp-fg: var(--stone-600);
+  --stamp-bg: var(--stone-100);
+  --stamp-border: var(--stone-200);
+}
+
+.stamp-badge--indigo {
+  --stamp-fg: var(--indigo-600);
+  --stamp-bg: var(--indigo-50);
+  --stamp-border: var(--indigo-100);
+}
+
+.stamp-badge--violet {
+  --stamp-fg: var(--violet-600);
+  --stamp-bg: var(--violet-50);
+  --stamp-border: var(--violet-100);
+}
+
+.stamp-badge--sky {
+  --stamp-fg: var(--sky-700);
+  --stamp-bg: var(--sky-50);
+  --stamp-border: var(--sky-100);
+}
+
+[data-theme="dark"] .stamp-badge--indigo {
+  --stamp-fg: var(--indigo-300);
+  --stamp-bg: rgba(99, 102, 241, 0.16);
+  --stamp-border: rgba(129, 140, 248, 0.3);
+}
+
+[data-theme="dark"] .stamp-badge--violet {
+  --stamp-fg: #c4b5fd;
+  --stamp-bg: rgba(139, 92, 246, 0.16);
+  --stamp-border: rgba(167, 139, 250, 0.3);
+}
+
+[data-theme="dark"] .stamp-badge--sky {
+  --stamp-fg: #7dd3fc;
+  --stamp-bg: rgba(14, 165, 233, 0.14);
+  --stamp-border: rgba(56, 189, 248, 0.3);
+}

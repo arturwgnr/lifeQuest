@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
 import { completionRate, dayQualityLabel, pillarScaleStyle } from "../constants/pillars.js";
+import { resolveStamp } from "../constants/stamps.js";
 import LoadingIndicator from "./LoadingIndicator.jsx";
+import StampBadge from "./StampBadge.jsx";
 import "../styles/PillarsCalendar.css";
 
 // Two clicks/taps on the same reported day within this window count as a
@@ -30,6 +32,23 @@ function buildMonthGrid(monthDate) {
   for (let day = 1; day <= daysInMonth; day++) cells.push(new Date(Date.UTC(year, month, day)));
   while (cells.length % 7 !== 0) cells.push(null);
   return cells;
+}
+
+function dayTypeName(day) {
+  if (!day) return null;
+  return day.groupName ? `${day.groupName}${day.groupDeleted ? " (deleted)" : ""}` : "Deleted day type";
+}
+
+// The stamp glyph for a reported day. Deleted day types have no stamp left,
+// so they get a plain dot instead of a guessed symbol.
+function DayStamp({ day }) {
+  if (day.groupDeleted) return <span className="pillars-calendar__cell-stamp pillars-calendar__cell-stamp--dot" aria-hidden="true" />;
+  const { Icon } = resolveStamp({ stampIcon: day.stampIcon, name: day.groupName });
+  return (
+    <span className="pillars-calendar__cell-stamp" aria-hidden="true">
+      <Icon strokeWidth={2.25} />
+    </span>
+  );
 }
 
 function formatLongDate(key) {
@@ -103,6 +122,16 @@ export default function PillarsCalendar({
   const monthAverage = monthRates.length ? Math.round(monthRates.reduce((a, b) => a + b, 0) / monthRates.length) : null;
   const perfectDays = monthRates.filter(r => r === 100).length;
 
+  // Legend lists only the day types actually stamped on this month's grid
+  const legendTypes = [];
+  const seenTypes = new Set();
+  for (const day of monthDays) {
+    const typeKey = day.groupId || `deleted:${day.groupName}`;
+    if (seenTypes.has(typeKey)) continue;
+    seenTypes.add(typeKey);
+    legendTypes.push(day);
+  }
+
   const detailKey = hoveredKey || selectedDate;
   const detailDay = summaryByDate.get(detailKey);
   const detailRate = detailDay ? completionRate(detailDay.completedCount, detailDay.totalCount) : null;
@@ -140,7 +169,7 @@ export default function PillarsCalendar({
           const rate = day ? completionRate(day.completedCount, day.totalCount) : null;
           const isFuture = key > todayKey;
           const label = day
-            ? `${formatLongDate(key)}: ${rate}% (${day.completedCount} of ${day.totalCount} pillars, ${day.groupName || "Pillars"})`
+            ? `${formatLongDate(key)}: ${dayTypeName(day)}, ${rate ?? 0}% (${day.completedCount} of ${day.totalCount} pillars)`
             : `${formatLongDate(key)}: no report`;
 
           const classes = [
@@ -168,6 +197,7 @@ export default function PillarsCalendar({
               aria-pressed={key === selectedDate}
               title={label}
             >
+              {day && <DayStamp day={day} />}
               <span className="pillars-calendar__cell-day">{date.getUTCDate()}</span>
               {rate !== null && <span className="pillars-calendar__cell-rate">{rate}%</span>}
             </button>
@@ -185,10 +215,21 @@ export default function PillarsCalendar({
             {formatLongDate(detailKey)}
             {detailKey === todayKey && <span className="pillars-calendar__detail-today">Today</span>}
           </strong>
-          <span>
-            {detailDay
-              ? `${detailRate}% · ${detailDay.completedCount}/${detailDay.totalCount} pillars · ${detailDay.groupName || "Pillars"}`
-              : "No report saved for this day"}
+          <span className="pillars-calendar__detail-sub">
+            {detailDay ? (
+              <>
+                {detailDay.groupDeleted ? (
+                  <span className="pillars-calendar__detail-dot" aria-hidden="true" />
+                ) : (
+                  <StampBadge stampIcon={detailDay.stampIcon} stampTone={detailDay.stampTone} name={detailDay.groupName} size="xs" />
+                )}
+                <span>
+                  {dayTypeName(detailDay)} · {detailRate ?? 0}% · {detailDay.completedCount}/{detailDay.totalCount} pillars
+                </span>
+              </>
+            ) : (
+              "No report saved for this day"
+            )}
           </span>
         </div>
         <span className="pillars-calendar__detail-label">{dayQualityLabel(detailRate)}</span>
@@ -230,6 +271,21 @@ export default function PillarsCalendar({
           <span className="pillars-calendar__legend-label">100%</span>
         </div>
       </div>
+
+      {legendTypes.length > 0 && (
+        <ul className="pillars-calendar__stamps" aria-label="Day types this month">
+          {legendTypes.map(day => (
+            <li key={day.groupId || `deleted:${day.groupName}`}>
+              {day.groupDeleted ? (
+                <span className="pillars-calendar__detail-dot" aria-hidden="true" />
+              ) : (
+                <StampBadge stampIcon={day.stampIcon} stampTone={day.stampTone} name={day.groupName} size="xs" />
+              )}
+              <span>{dayTypeName(day)}</span>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
