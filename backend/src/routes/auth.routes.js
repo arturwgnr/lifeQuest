@@ -53,6 +53,7 @@ router.post("/register", async (req, res) => {
           name: "Everyday",
           isDefault: true,
           isActive: true,
+          stampIcon: "Sun",
           pillars: { create: DEFAULT_PILLARS }
         }
       }
@@ -135,7 +136,7 @@ router.delete("/me", requireAuth, async (req, res) => {
     await prisma.$transaction([
       // Conversations cascade to messages and suggestions
       prisma.oracleConversation.deleteMany({ where: { userId } }),
-      // Logs cascade to their entries, which reference Pillar (RESTRICT)
+      // Logs cascade to their entries
       prisma.dailyPillarLog.deleteMany({ where: { userId } }),
       // Groups cascade to pillars
       prisma.pillarGroup.deleteMany({ where: { userId } }),
