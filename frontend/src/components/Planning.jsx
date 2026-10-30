@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { DndContext, MouseSensor, TouchSensor, closestCenter, useSensor, useSensors } from "@dnd-kit/core";
 import { SortableContext, rectSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Route, GripVertical, ChevronUp, ChevronDown, Eye } from "lucide-react";
+import { Route, GripVertical, ChevronUp, ChevronDown, Eye, Plus } from "lucide-react";
 import { api } from "../api/client.js";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useCategories } from "../context/CategoriesContext.jsx";
@@ -11,6 +11,7 @@ import { STATUSES, STATUS_LABELS, STATUS_VISUAL, PRIORITY_LABELS } from "../cons
 import { playTaskCompleted, playTaskBlocked } from "../utils/soundEffects.js";
 import { notifyStatusChange, withStatus } from "../utils/taskFeedback.js";
 import TaskDetailModal from "./TaskDetailModal.jsx";
+import AddTaskModal from "./AddTaskModal.jsx";
 import LevelUpNotification from "./LevelUpNotification.jsx";
 import LoadingIndicator from "./LoadingIndicator.jsx";
 import "../styles/Planning.css";
@@ -34,9 +35,15 @@ function applyOrder(tasks, orderedIds) {
   return tasks.map(t => (position.has(t.id) ? { ...t, planningOrder: position.get(t.id) } : t));
 }
 
-function PlanningCard({ task, index, total, onStatusChange, onMove, onSelect, isDropTarget, justReordered }) {
+function PlanningCard({ task, index, total, onStatusChange, onMove, onSelect, onInsertAfter, isDropTarget, justReordered }) {
   const { getCategoryDisplay } = useCategories();
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id });
+  // A quest still being forged (optimistic) renders in place but can't be
+  // dragged or edited until the server hands back its real id.
+  const isPending = Boolean(task.isPending);
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: task.id,
+    disabled: isPending
+  });
   const config = getCategoryDisplay(task.categoryId);
   const Icon = config.icon;
   const statusTone = STATUS_VISUAL[task.status].tone;
@@ -52,18 +59,34 @@ function PlanningCard({ task, index, total, onStatusChange, onMove, onSelect, is
     task.status === "DONE" && "planning-card--done",
     isDragging && "planning-card--dragging",
     isDropTarget && "planning-card--drag-over",
-    justReordered && "planning-card--drop-success"
+    justReordered && "planning-card--drop-success",
+    isPending && "planning-card--pending"
   ]
     .filter(Boolean)
     .join(" ");
 
   return (
-    <div ref={setNodeRef} style={style} className={classes}>
+    <div ref={setNodeRef} style={style} className={classes} aria-busy={isPending}>
       <div className="planning-card__top">
         <span className="planning-card__index">{index + 1}</span>
-        <button type="button" className="planning-card__handle" {...attributes} {...listeners} aria-label="Drag to reorder">
-          <GripVertical size={16} />
-        </button>
+        {isPending ? (
+          <LoadingIndicator size="sm" label="Forging..." />
+        ) : (
+          <div className="planning-card__top-actions">
+            <button
+              type="button"
+              className="planning-card__insert"
+              onClick={() => onInsertAfter(index + 1)}
+              aria-label={`Add a quest after #${index + 1}`}
+              title="Add a quest after this one"
+            >
+              <Plus size={15} />
+            </button>
+            <button type="button" className="planning-card__handle" {...attributes} {...listeners} aria-label="Drag to reorder">
+              <GripVertical size={16} />
+            </button>
+          </div>
+        )}
       </div>
 
       <span className={`planning-card__category planning-card__category--${config.tone}`}>
@@ -71,7 +94,7 @@ function PlanningCard({ task, index, total, onStatusChange, onMove, onSelect, is
         {config.name}
       </span>
 
-      <button type="button" className="planning-card__title" onClick={() => onSelect(task.id)}>
+      <button type="button" className="planning-card__title" onClick={() => onSelect(task.id)} disabled={isPending}>
         {task.title}
       </button>
 
@@ -88,6 +111,7 @@ function PlanningCard({ task, index, total, onStatusChange, onMove, onSelect, is
           onChange={e => onStatusChange(task.id, e.target.value)}
           className="planning-card__status-select"
           aria-label="Change status"
+          disabled={isPending}
         >
           {STATUSES.map(s => (
             <option key={s} value={s}>
@@ -97,12 +121,12 @@ function PlanningCard({ task, index, total, onStatusChange, onMove, onSelect, is
         </select>
 
         <div className="planning-card__reorder-buttons">
-          <button type="button" disabled={index === 0} onClick={() => onMove(task.id, -1)} aria-label="Move earlier in sequence">
+          <button type="button" disabled={isPending || index === 0} onClick={() => onMove(task.id, -1)} aria-label="Move earlier in sequence">
             <ChevronUp size={14} />
           </button>
           <button
             type="button"
-            disabled={index === total - 1}
+            disabled={isPending || index === total - 1}
             onClick={() => onMove(task.id, 1)}
             aria-label="Move later in sequence"
           >
@@ -110,7 +134,13 @@ function PlanningCard({ task, index, total, onStatusChange, onMove, onSelect, is
           </button>
         </div>
 
-        <button type="button" className="planning-card__view" onClick={() => onSelect(task.id)} aria-label="View quest detail">
+        <button
+          type="button"
+          className="planning-card__view"
+          onClick={() => onSelect(task.id)}
+          disabled={isPending}
+          aria-label="View quest detail"
+        >
           <Eye size={15} />
         </button>
       </div>
@@ -130,6 +160,9 @@ export default function Planning() {
   const [activeId, setActiveId] = useState(null);
   const [overId, setOverId] = useState(null);
   const [justReorderedIds, setJustReorderedIds] = useState(new Set());
+  // null = closed; otherwise the sequence position the new quest goes to
+  const [addAtIndex, setAddAtIndex] = useState(null);
+  const [isCreating, setIsCreating] = useState(false);
 
   // Latest list for callbacks that outlive a render (toast Undo actions)
   const tasksRef = useRef(tasks);
@@ -202,6 +235,57 @@ export default function Planning() {
     }
   };
 
+  // Optimistic create: the quest shows up at its slot in the sequence right
+  // away (the list never unmounts), then the real task replaces the
+  // placeholder and the slot is saved as its planningOrder. A failed create
+  // removes the placeholder; the modal stays open with the draft for a retry.
+  const handleCreateTask = async payload => {
+    const visibleIds = sequence.map(t => t.id);
+    const insertAt = Math.min(addAtIndex ?? visibleIds.length, visibleIds.length);
+    const tempId = `pending-${Date.now()}`;
+    const placeholder = {
+      ...payload,
+      id: tempId,
+      title: payload.title.trim(),
+      status: "TODO",
+      planningOrder: null,
+      createdAt: new Date().toISOString(),
+      isPending: true
+    };
+    const orderedIds = [...visibleIds.slice(0, insertAt), tempId, ...visibleIds.slice(insertAt)];
+
+    setTasks(prev => applyOrder([...prev, placeholder], orderedIds));
+    setIsCreating(true);
+
+    let created;
+    try {
+      ({ task: created } = await api.tasks.create(payload));
+    } catch (err) {
+      setTasks(prev => prev.filter(t => t.id !== tempId));
+      setIsCreating(false);
+      errorToastFor(toast, err, "Quest couldn't be forged");
+      throw err;
+    }
+
+    const finalIds = orderedIds.map(id => (id === tempId ? created.id : id));
+    setTasks(prev => applyOrder(prev.map(t => (t.id === tempId ? created : t)), finalIds));
+    setJustReorderedIds(new Set([created.id]));
+    setTimeout(() => setJustReorderedIds(new Set()), 900);
+    toast.success(`Quest forged: ${created.title}`, {
+      description: `${created.priorityType === "MAIN" ? "Main" : "Side"} quest · #${insertAt + 1} in your sequence`
+    });
+
+    try {
+      const { tasks: updated } = await api.tasks.reorder(finalIds);
+      setTasks(updated);
+    } catch (err) {
+      errorToastFor(toast, err, "Quest forged, but its position couldn't be saved");
+      loadTasks().catch(() => {});
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
   const handleDragStart = event => setActiveId(event.active.id);
   const handleDragOver = event => setOverId(event.over ? event.over.id : null);
 
@@ -257,6 +341,8 @@ export default function Planning() {
   );
 
   const selectedTask = tasks.find(t => t.id === selectedTaskId) || null;
+  const rootTasks = tasks.filter(t => !t.parentTaskId && !t.isPending);
+  const openAdd = index => setAddAtIndex(index ?? sequence.length);
 
   if (isLoading) {
     return (
@@ -276,15 +362,25 @@ export default function Planning() {
           </h2>
           <p>Drag quests into the order you actually intend to work through them. Your sequence saves automatically.</p>
         </div>
-        <label className="planning__toggle">
-          <input type="checkbox" checked={showCompleted} onChange={e => setShowCompleted(e.target.checked)} />
-          Show completed
-        </label>
+        <div className="planning__header-actions">
+          <label className="planning__toggle">
+            <input type="checkbox" checked={showCompleted} onChange={e => setShowCompleted(e.target.checked)} />
+            Show completed
+          </label>
+          <button type="button" className="planning__add btn-lift" onClick={() => openAdd()} disabled={isCreating}>
+            <Plus size={15} />
+            Add task
+          </button>
+        </div>
       </div>
 
       {sequence.length === 0 ? (
         <div className="planning__empty">
-          <p>No open quests to sequence yet. Forge a quest from the Dashboard to start building your roadmap.</p>
+          <p>No open quests to sequence yet. Forge your first one here to start building your roadmap.</p>
+          <button type="button" className="planning__add planning__add--empty btn-lift" onClick={() => openAdd()}>
+            <Plus size={15} />
+            Add task
+          </button>
         </div>
       ) : (
         <DndContext
@@ -295,8 +391,11 @@ export default function Planning() {
           onDragEnd={handleDragEnd}
         >
           <SortableContext items={sequence.map(t => t.id)} strategy={rectSortingStrategy}>
-            <div className={`planning__sequence${isSaving ? " planning__sequence--saving" : ""}`} aria-busy={isSaving}>
-              {isSaving && <LoadingIndicator variant="overlay" size="sm" label="Saving order…" />}
+            <div
+              className={`planning__sequence${isSaving ? " planning__sequence--saving" : ""}`}
+              aria-busy={isSaving || isCreating}
+            >
+              {isSaving && !isCreating && <LoadingIndicator variant="overlay" size="sm" label="Saving order…" />}
               {sequence.map((task, index) => (
                 <PlanningCard
                   key={task.id}
@@ -306,6 +405,7 @@ export default function Planning() {
                   onStatusChange={applyStatusChange}
                   onMove={handleMove}
                   onSelect={setSelectedTaskId}
+                  onInsertAfter={openAdd}
                   isDropTarget={overId === task.id && activeId !== task.id}
                   justReordered={justReorderedIds.has(task.id)}
                 />
@@ -313,6 +413,32 @@ export default function Planning() {
             </div>
           </SortableContext>
         </DndContext>
+      )}
+
+      {sequence.length > 0 && (
+        <button
+          type="button"
+          className="planning__fab"
+          onClick={() => openAdd()}
+          disabled={isCreating}
+          aria-label="Add task to the end of your sequence"
+        >
+          <Plus size={22} />
+        </button>
+      )}
+
+      {addAtIndex !== null && (
+        <AddTaskModal
+          quickAdd
+          rootTasks={rootTasks}
+          subtitle={
+            addAtIndex >= sequence.length
+              ? "Goes to the end of your sequence"
+              : `Goes in at position #${addAtIndex + 1} of your sequence`
+          }
+          onClose={() => setAddAtIndex(null)}
+          onCreate={handleCreateTask}
+        />
       )}
 
       {selectedTask && (

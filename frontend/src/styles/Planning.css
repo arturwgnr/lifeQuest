@@ -449,3 +449,133 @@
     transition: none !important;
   }
 }
+
+/* ---------- Add task ---------- */
+
+.planning__header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.planning__add {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2.25rem;
+  padding: 0.45rem 0.9rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: white;
+  background: var(--ink);
+  border: none;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.planning__add:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.planning__add--empty {
+  margin-top: 1rem;
+}
+
+.planning-card__top-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* Inline insertion point: adds a quest right after this card */
+.planning-card__insert {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  margin: -0.35rem 0;
+  padding: 0;
+  border: 1px dashed var(--slate-200);
+  border-radius: var(--radius-md);
+  background: none;
+  color: var(--slate-400);
+}
+
+@media (hover: hover) {
+  .planning-card__insert {
+    opacity: 0;
+    transition: opacity var(--dur-fast) ease;
+  }
+
+  .planning-card:hover .planning-card__insert,
+  .planning-card__insert:focus-visible {
+    opacity: 1;
+  }
+
+  .planning-card__insert:hover {
+    color: var(--hover-accent);
+    border-color: var(--hover-accent-border);
+    background: var(--hover-accent-bg);
+  }
+}
+
+/* Optimistic placeholder while the quest is being saved */
+.planning-card--pending {
+  opacity: 0.7;
+  border-style: dashed;
+}
+
+.planning-card--pending button:disabled,
+.planning-card--pending select:disabled {
+  cursor: progress;
+}
+
+/* Mobile entry point: floats in the corner, and the sequence gets matching
+   bottom room so the last card can always scroll clear of it. */
+.planning__fab {
+  display: none;
+}
+
+@media (max-width: 639px) {
+  .planning__header-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .planning__add:not(.planning__add--empty) {
+    min-height: 2.75rem;
+  }
+
+  .planning__sequence {
+    padding-bottom: 5rem;
+  }
+
+  .planning__fab {
+    position: fixed;
+    z-index: 40;
+    right: 1rem;
+    bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 3.5rem;
+    height: 3.5rem;
+    padding: 0;
+    color: white;
+    background: var(--ink);
+    border: none;
+    border-radius: 999px;
+    box-shadow: var(--shadow-lg);
+  }
+
+  .planning__fab:disabled {
+    opacity: 0.6;
+  }
+
+  .planning__fab:active {
+    transform: scale(0.96);
+  }
+}
