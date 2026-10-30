@@ -1,6 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { CalendarCheck, Check, ChevronLeft, ChevronRight, Plus, Save, Settings } from "lucide-react";
+import {
+  AlertTriangle,
+  CalendarCheck,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+  RotateCw,
+  Save,
+  Settings
+} from "lucide-react";
 import { api } from "../api/client.js";
 import { useToast, errorToastFor } from "../context/ToastContext.jsx";
 import { completionRate, dayQualityLabel, localDateKey, pillarScaleStyle } from "../constants/pillars.js";
@@ -80,6 +90,7 @@ export default function Pillars() {
   const [isDeletingDay, setIsDeletingDay] = useState(false);
   // Bumped after deleting the selected day so its (now empty) checklist reloads
   const [logVersion, setLogVersion] = useState(0);
+  const [loadError, setLoadError] = useState(null);
   const [isAddingPillar, setIsAddingPillar] = useState(false);
   const [isSavingPillar, setIsSavingPillar] = useState(false);
 
@@ -102,17 +113,21 @@ export default function Pillars() {
     setSummary(loaded);
   };
 
+  const loadAll = async () => {
+    setIsLoading(true);
+    setLoadError(null);
+    try {
+      await Promise.all([loadGroups(), loadSummary()]);
+    } catch (err) {
+      setLoadError(err);
+      errorToastFor(toast, err, "Couldn't load your pillars");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    (async () => {
-      setIsLoading(true);
-      try {
-        await Promise.all([loadGroups(), loadSummary()]);
-      } catch (err) {
-        errorToastFor(toast, err, "Couldn't load your pillars");
-      } finally {
-        setIsLoading(false);
-      }
-    })();
+    loadAll();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -302,6 +317,29 @@ export default function Pillars() {
     return (
       <div className="pillars__loading">
         <LoadingIndicator variant="panel" size="lg" label="Loading your pillars..." />
+      </div>
+    );
+  }
+
+  if (loadError) {
+    const offline = loadError instanceof TypeError;
+    return (
+      <div className="pillars__loading">
+        <div className="pillars__load-error" role="alert">
+          <AlertTriangle size={20} />
+          <h3>Pillars couldn't load</h3>
+          <p>{offline ? "Network error. Check your connection or whether the server is running." : loadError.message}</p>
+          {loadError.status && (
+            <code>
+              HTTP {loadError.status}
+              {loadError.data?.code ? ` · ${loadError.data.code}` : ""}
+            </code>
+          )}
+          <button type="button" className="pillars__save btn-lift" onClick={loadAll}>
+            <RotateCw size={14} />
+            Try again
+          </button>
+        </div>
       </div>
     );
   }

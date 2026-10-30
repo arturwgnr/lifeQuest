@@ -1,11 +1,29 @@
 const BASE_URL = "/api";
+// Generous enough for an AI call or a cold-starting server, short enough
+// that a stalled request turns into an error instead of an endless loader
+const TIMEOUT_MS = 45000;
 
 async function request(path, options = {}) {
-  const res = await fetch(`${BASE_URL}${path}`, {
-    credentials: "include",
-    headers: { "Content-Type": "application/json", ...(options.headers || {}) },
-    ...options
-  });
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  let res;
+  try {
+    res = await fetch(`${BASE_URL}${path}`, {
+      credentials: "include",
+      headers: { "Content-Type": "application/json", ...(options.headers || {}) },
+      signal: controller.signal,
+      ...options
+    });
+  } catch (err) {
+    if (err.name === "AbortError") {
+      const error = new Error(`The server didn't respond within ${TIMEOUT_MS / 1000}s (${path})`);
+      error.status = 408;
+      throw error;
+    }
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
 
   if (res.status === 204) return null;
 
